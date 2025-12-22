@@ -1,0 +1,14 @@
+Flask==2.3.3
+Flask-Login==0.6.3
+Werkzeug==2.3.7
+python-dotenv==1.0.0
+watchdog==3.0.0
+pandas==2.0.3
+numpy==1.24.3
+requests==2.31.0
+python-magic==0.4.27
+pyyaml==6.0
+chardet==5.2.0
+pillow==10.0.0
+openpyxl==3.1.2
+pdfminer.six==20221105
