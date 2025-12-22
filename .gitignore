@@ -1,10 +1,25 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*$py.class
 *.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Virtual Environment
 .venv/
@@ -14,73 +29,24 @@ ENV/
 env.bak/
 venv.bak/
 
-# Environment
-.env
-.env.local
-.env.*.local
-!.env.example
-
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-desktop.ini
 
-# Backups
-*.backup
-*.bak
-*.old
-*.orig
-*.temp
-
-# Test files
-test_*.csv
-test_*.log
-*.test
-*.spec
-
-# Logs
-*.log
+# DLP System specific
+data/
+reports/
 logs/
-logs*.txt
-
-# Runtime data
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage
-.coverage
-htmlcov/
-.coverage.*
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Output
-dist/
-build/
-*.egg-info/
-*.egg
-
-# Temporary
-temp/
-tmp/
-uploads/
-downloads/
-
-# Database
+*.log
 *.db
-*.sqlite
 *.sqlite3
+
+# Temporary files
+*.tmp
+*.temp

@@ -232,7 +232,7 @@ SAMPLE_POLICIES = [
     {"id": 2, "name": "SSN Protection", "description": "Detect Social Security numbers", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-10", "last_modified": "2024-01-18", "rules": {"patterns": [r"\d{3}-\d{2}-\d{4}"]}},
     {"id": 3, "name": "Password Files", "description": "Detect password files", "status": "draft", "type": "file", "severity": "medium", "created": "2024-01-05", "last_modified": "2024-01-12", "rules": {"extensions": [".pass", ".pwd", "password.txt"]}},
     {"id": 4, "name": "API Key Detection", "description": "Detect exposed API keys", "status": "active", "type": "pattern", "severity": "medium", "created": "2024-01-08", "last_modified": "2024-01-15", "rules": {"patterns": [r"[A-Z0-9]{20}", r"sk_live_[a-zA-Z0-9]{24}"]}},
-    {"id": 5, "name": "PII Detection", "description": "Detect Personally Identifiable Information", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-12", "last_modified": "2024-01-19", "rules": {"patterns": [r"[A-Z][a-z]+ [A-Z][a-z]+", r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"]}},
+    {"id": 5, "name": "PII Detection", "description": "Detect Personally Identifiable Information", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-12", "last_modified": "2024-01-19", "rules": {"patterns": [r"[A-Z][a-z]+ [A-Z][a-z]+", r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}"]}},
 ]
 
 # Global report storage
@@ -1046,7 +1046,8 @@ def server_error(error):
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully"""
     logger.info("Shutdown signal received. Gracefully shutting down...")
-    print("\n🔄 Shutting down DLP Security System gracefully...")
+    print("
+🔄 Shutting down DLP Security System gracefully...")
     sys.exit(0)
 
 if __name__ == '__main__':
@@ -1067,18 +1068,21 @@ if __name__ == '__main__':
     print(f"📊 Data directory: {DATA_DIR}")
     print(f"📄 Reports directory: {REPORTS_DIR}")
     print(f"📝 Log directory: {LOG_DIR}")
-    print("\n✅ System checks:")
+    print("
+✅ System checks:")
     print(f"   • Python version: {platform.python_version()}")
     print(f"   • Operating System: {platform.system()} {platform.release()}")
     print(f"   • System architecture: {platform.machine()}")
     print(f"   • Virtual environment: {'Active' if hasattr(sys, 'real_prefix') or sys.base_prefix != sys.prefix else 'Not active'}")
     
-    print("\n👤 Default Users:")
+    print("
+👤 Default Users:")
     print("   admin:Admin@123    (Admin role)")
     print("   user:User@123      (User role)")
     print("   auditor:Auditor@123 (Auditor role)")
     
-    print("\n📊 Features:")
+    print("
+📊 Features:")
     print("   • Real-time report generation")
     print("   • PDF/CSV/HTML report formats")
     print("   • Background processing")
@@ -1089,7 +1093,8 @@ if __name__ == '__main__':
     print("   • Secure file permissions")
     print("   • Comprehensive logging")
     
-    print("\n🌐 Access: http://localhost:5000")
+    print("
+🌐 Access: http://localhost:5000")
     print("   Press Ctrl+C to stop the server")
     print("=" * 60)
     
@@ -1108,8 +1113,10 @@ if __name__ == '__main__':
             use_reloader=False  # Disable reloader for better signal handling
         )
     except KeyboardInterrupt:
-        print("\n👋 Shutdown requested by user")
+        print("
+👋 Shutdown requested by user")
         logger.info("Application shutdown by user")
     except Exception as e:
         logger.error(f"Application error: {e}")
-        print(f"\n❌ Error: {e}")
+        print(f"
+❌ Error: {e}")

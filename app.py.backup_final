@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+nano app.py#!/usr/bin/env python3
 """
 DLP Security System with Persistent User Storage - Linux Optimized
 """
@@ -290,76 +290,34 @@ def create_default_users():
     save_users(default_users)
     return default_users
 
-def save_users(users):
-    """Save users to JSON file - accepts either User objects or dictionaries"""
-    try:
-        # Ensure data directory exists
-        DATA_DIR.mkdir(exist_ok=True)
-        
-        # Convert to dict format for saving
-        users_dict = {}
-        for user_id, user_data in users.items():
-            if hasattr(user_data, 'to_dict'):
-                # It's a User object - convert to dictionary
-                users_dict[str(user_id)] = user_data.to_dict()
-            else:
-                # It's already a dictionary
-                users_dict[str(user_id)] = user_data
-        
-        with open(USERS_FILE, 'w') as f:
-            json.dump(users_dict, f, indent=2)
-        
-        # Set secure permissions
-        set_file_permissions()
-        print(f"✅ Users saved to {USERS_FILE}")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error saving users: {e}")
-        return False
-
+        json.dump(users_dict, f, indent=2)
+    
+    # Set secure permissions
+    set_file_permissions()
 
 def get_next_user_id():
     """Get the next available user ID"""
     users = load_users()
     if users:
-        # Get all user IDs as integers
-        user_ids = []
-        for uid in users.keys():
-            try:
-                user_ids.append(int(uid))
-            except (ValueError, TypeError):
-                continue
-        if user_ids:
-            return max(user_ids) + 1
+        return max(users.keys()) + 1
     return 1
-
 
 def save_new_user(user):
     """Save a new user to the database"""
-    try:
-        users = load_users()
-        
-        # Convert User object to dictionary for saving
-        user_dict = user.to_dict()
-        user_id = str(user.id)
-        
-        # Add to users dictionary
-        users[user_id] = user_dict
-        
-        # Save using save_users (which now accepts dictionaries)
-        if save_users(users):
-            print(f"✅ New user '{user.username}' saved with ID: {user_id}")
-            return True
-        else:
-            print(f"❌ Failed to save user '{user.username}'")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Error in save_new_user: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    users = load_users()
+    users[user.id] = user
+    
+    # Convert User objects to dictionaries for saving
+    users_dict = {}
+    for uid, user_obj in users.items():
+        users_dict[uid] = {
+            'id': user_obj.id,
+            'username': user_obj.username,
+            'email': user_obj.email,
+            'role': user_obj.role,
+            'password_hash': user_obj.password_hash
+        }
+    save_users(users_dict)  # Save dictionaries, not objects
 
 
 # Load users at startup

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+fixed_code = '''#!/usr/bin/env python3
 """
 DLP Security System with Persistent User Storage - Linux Optimized
 """
@@ -1113,3 +1113,10 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Application error: {e}")
         print(f"\n❌ Error: {e}")
+'''
+
+# Write the fixed code to app.py
+with open('app.py', 'w') as f:
+    f.write(fixed_code)
+
+print("✅ Created fixed app.py")
