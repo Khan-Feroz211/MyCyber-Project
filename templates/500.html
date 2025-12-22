@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - DLP Security{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+            <div class="error-container">
+                <h1 class="display-1 text-danger mb-4">
+                    <i class="bi bi-exclamation-octagon"></i> 500
+                </h1>
+                <h2 class="mb-4">Internal Server Error</h2>
+                <p class="lead mb-4">
+                    Something went wrong on our end. Our team has been notified.
+                </p>
+                <div class="card bg-dark p-4 mb-4">
+                    <p class="mb-0">
+                        <strong>User:</strong> {{ user.username if user else 'Guest' }}<br>
+                        <strong>Role:</strong> {{ user.role|title if user else 'N/A' }}<br>
+                        <strong>Time:</strong> {{ now.strftime('%Y-%m-%d %H:%M:%S') }}<br>
+                        <strong>DLP Engine:</strong> {{ 'Available' if dlp_available else 'Not Available' }}
+                    </p>
+                </div>
+                <div class="mt-4">
+                    <a href="{{ url_for('dashboard') if user else url_for('login') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house-door"></i> {{ 'Back to Dashboard' if user else 'Go to Login' }}
+                    </a>
+                    <button onclick="location.reload()" class="btn btn-warning btn-lg ms-2">
+                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-container {
+    padding: 40px;
+    border-radius: 20px;
+    background: rgba(33, 37, 41, 0.8);
+    border: 1px solid #343a40;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - DLP Security{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <div class="stat-number">5</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-shield-exclamation"></i>
+                </div>
+                <div class="stat-number">44</div>
+                <div class="stat-label">Total Threats</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-number">5</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="stat-number">5</div>
+                <div class="stat-label">Active Policies</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history"></i> Recent Scans</span>
+                    <a href="{{ url_for('scanner') }}" class="btn btn-sm btn-outline-info">View All</a>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Scan Name</th>
+                                <th>Status</th>
+                                <th>Threats</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>System Scan</td>
+                                <td><span class="badge bg-success">Completed</span></td>
+                                <td><span class="badge bg-danger">12</span></td>
+                                <td>14:30</td>
+                            </tr>
+                            <tr>
+                                <td>User Documents</td>
+                                <td><span class="badge bg-warning">Scanning</span></td>
+                                <td><span class="badge bg-success">0</span></td>
+                                <td>14:25</td>
+                            </tr>
+                            <tr>
+                                <td>Network Drive</td>
+                                <td><span class="badge bg-secondary">Pending</span></td>
+                                <td><span class="badge bg-secondary">-</span></td>
+                                <td>14:20</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <span><i class="bi bi-lightning"></i> Quick Actions</span>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary w-100 mb-3 py-3" onclick="startQuickScan()">
+                        <i class="bi bi-search"></i> Quick Scan
+                    </button>
+                    <button class="btn btn-success w-100 mb-3 py-3" onclick="generateReport()">
+                        <i class="bi bi-file-earmark-pdf"></i> Generate Report
+                    </button>
+                    <button class="btn btn-warning w-100 py-3" onclick="viewThreats()">
+                        <i class="bi bi-exclamation-triangle"></i> View Threats
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-activity"></i> System Status
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-shield-check display-4 text-success"></i>
+                                <h5 class="mt-2">Scanner</h5>
+                                <span class="badge bg-success">Active</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-database display-4 text-success"></i>
+                                <h5 class="mt-2">Database</h5>
+                                <span class="badge bg-success">Connected</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-cpu display-4 text-success"></i>
+                                <h5 class="mt-2">DLP Engine</h5>
+                                <span class="badge bg-success">Active</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-clock display-4 text-info"></i>
+                                <h5 class="mt-2">Last Check</h5>
+                                <span>Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startQuickScan() {
+    alert('Starting quick scan...');
+}
+
+function generateReport() {
+    alert('Generating report...');
+}
+
+function viewThreats() {
+    window.location.href = '/threats';
+}
+</script>
+{% endblock %}

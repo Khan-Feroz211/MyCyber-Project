@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts Center - DLP Security{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header and Filters -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-bell"></i> Alerts Center</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-info me-2" onclick="refreshAlerts()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="clearAllAlerts()">
+                            <i class="bi bi-trash"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6>Filter by Severity:</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="filter-badge badge bg-secondary" onclick="filterAlerts('all')">All ({{ alerts|length }})</span>
+                                <span class="filter-badge badge bg-danger" onclick="filterAlerts('critical')">Critical</span>
+                                <span class="filter-badge badge bg-warning" onclick="filterAlerts('warning')">Warning</span>
+                                <span class="filter-badge badge bg-info" onclick="filterAlerts('info')">Info</span>
+                                <span class="filter-badge badge bg-success" onclick="filterAlerts('success')">Success</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="stat-box critical">
+                        <div class="stat-count" style="color: #ef4444;">
+                            {{ alerts|selectattr('type', 'equalto', 'danger')|list|length }}
+                        </div>
+                        <div class="stat-label" style="color: #ef4444;">Critical Alerts</div>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="stat-box warning">
+                        <div class="stat-count" style="color: #f59e0b;">
+                            {{ alerts|selectattr('type', 'equalto', 'warning')|list|length }}
+                        </div>
+                        <div class="stat-label" style="color: #f59e0b;">Warnings</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="stat-box info">
+                        <div class="stat-count" style="color: #3b82f6;">
+                            {{ alerts|selectattr('type', 'equalto', 'info')|list|length }}
+                        </div>
+                        <div class="stat-label" style="color: #3b82f6;">Info Alerts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> All Alerts</h5>
+                </div>
+                <div class="card-body">
+                    {% if alerts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Title</th>
+                                    <th>Message</th>
+                                    <th>Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in alerts %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if alert.type == 'danger' else 'warning' if alert.type == 'warning' else 'info' if alert.type == 'info' else 'success' }}">
+                                            {{ alert.type|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-{{ alert.icon }} me-2"></i>
+                                        {{ alert.title }}
+                                    </td>
+                                    <td>{{ alert.message }}</td>
+                                    <td>{{ alert.time }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewAlert({{ loop.index0 }})">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success" onclick="markAsRead({{ loop.index0 }})">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-bell-slash display-4 text-muted"></i>
+                        <h5 class="mt-3">No Alerts</h5>
+                        <p class="text-muted">Your system is currently clear of alerts.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Details -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Alert Details</h5>
+                </div>
+                <div class="card-body">
+                    <div id="alertDetails" class="text-center py-4">
+                        <i class="bi bi-info-circle display-4 text-info"></i>
+                        <p class="mt-2">Select an alert to view details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Threat Correlation -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-link"></i> Threat Correlation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if threats %}
+                            {% for threat in threats[:4] %}
+                            <div class="col-md-6 mb-3">
+                                <div class="alert-card {{ 'critical' if threat.severity == 'high' else 'warning' if threat.severity == 'medium' else 'info' }}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ threat.name }}</h6>
+                                            <p class="mb-0 small">{{ threat.description[:60] }}{% if threat.description|length > 60 %}...{% endif %}</p>
+                                        </div>
+                                        <span class="badge bg-{{ 'danger' if threat.severity == 'high' else 'warning' if threat.severity == 'medium' else 'info' }}">
+                                            {{ threat.severity|title }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <small class="text-muted">{{ threat.time }}</small>
+                                        <small class="text-muted">{{ threat.location }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12 text-center py-3">
+                                <p class="text-muted">No threats found</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterAlerts(type) {
+    const badges = document.querySelectorAll('.filter-badge');
+    badges.forEach(badge => badge.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // In a real app, this would filter the alerts
+    alert('Filtering by: ' + type + ' (This would filter alerts in a real implementation)');
+}
+
+function viewAlert(index) {
+    const alerts = {{ alerts|tojson|safe }};
+    const alert = alerts[index];
+    
+    const detailsDiv = document.getElementById('alertDetails');
+    detailsDiv.innerHTML = `
+        <div class="alert-card ${alert.type}">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h4><i class="bi bi-${alert.icon}"></i> ${alert.title}</h4>
+                    <p class="mb-0">${alert.message}</p>
+                </div>
+                <span class="badge bg-${alert.type === 'danger' ? 'danger' : alert.type === 'warning' ? 'warning' : 'info'}">
+                    ${alert.type.toUpperCase()}
+                </span>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Time:</strong> ${alert.time}</p>
+                    <p><strong>Priority:</strong> ${alert.type === 'danger' ? 'High' : alert.type === 'warning' ? 'Medium' : 'Low'}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Status:</strong> <span class="badge bg-warning">Active</span></p>
+                    <p><strong>Source:</strong> DLP Security System</p>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button class="btn btn-success me-2" onclick="resolveAlert(${index})">
+                    <i class="bi bi-check-circle"></i> Mark as Resolved
+                </button>
+                <button class="btn btn-info" onclick="investigateAlert(${index})">
+                    <i class="bi bi-search"></i> Investigate
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function markAsRead(index) {
+    alert('Alert marked as read: ' + index);
+    // In real app, would update via API
+}
+
+function resolveAlert(index) {
+    if (confirm('Mark this alert as resolved?')) {
+        alert('Alert resolved successfully');
+        document.getElementById('alertDetails').innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle display-4 text-success"></i>
+                <p class="mt-2">Alert resolved successfully</p>
+            </div>
+        `;
+    }
+}
+
+function investigateAlert(index) {
+    alert('Opening investigation for alert: ' + index);
+    // Would navigate to investigation page
+}
+
+function refreshAlerts() {
+    location.reload();
+}
+
+function clearAllAlerts() {
+    if (confirm('Are you sure you want to clear all alerts?')) {
+        alert('All alerts cleared (simulation)');
+        // In real app, would call API to clear alerts
+    }
+}
+</script>
+{% endblock %}

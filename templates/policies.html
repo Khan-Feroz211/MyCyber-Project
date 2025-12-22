@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policies - DLP Security</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        .card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #475569;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .policy-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #475569;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            border-left: 4px solid;
+        }
+        
+        .policy-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .policy-card.active { border-left-color: #10b981; }
+        .policy-card.inactive { border-left-color: #6b7280; }
+        .policy-card.draft { border-left-color: #f59e0b; }
+        
+        .policy-badge {
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .policy-stats {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .policy-stat-count {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+        
+        .policy-stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+        }
+        
+        .form-control {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        
+        .form-control:focus {
+            background: #1e293b;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+            color: white;
+        }
+        
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+        
+        .table {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #475569;
+            font-weight: 600;
+        }
+        
+        .table td {
+            border-color: #475569;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #475569;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #10b981;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container-fluid py-4">
+        <!-- Header and Stats -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> DLP Policies</h5>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPolicyModal">
+                            <i class="bi bi-plus-circle"></i> Create Policy
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">Manage your Data Loss Prevention policies. Policies define what sensitive data to look for and how to handle violations.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="policy-stats" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981;">
+                            <div class="policy-stat-count" style="color: #10b981;">
+                                {{ policies|selectattr('status', 'equalto', 'active')|list|length }}
+                            </div>
+                            <div class="policy-stat-label">Active Policies</div>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <div class="policy-stats" style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b;">
+                            <div class="policy-stat-count" style="color: #f59e0b;">
+                                {{ policies|selectattr('status', 'equalto', 'draft')|list|length }}
+                            </div>
+                            <div class="policy-stat-label">Draft Policies</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="policy-stats" style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6;">
+                            <div class="policy-stat-count" style="color: #3b82f6;">
+                                {{ policies|length }}
+                            </div>
+                            <div class="policy-stat-label">Total Policies</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Policies Grid -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-grid"></i> All Policies</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-info active" onclick="filterPolicies('all')">All</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="filterPolicies('active')">Active</button>
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="filterPolicies('draft')">Draft</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="filterPolicies('inactive')">Inactive</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if policies %}
+                        <div class="row">
+                            {% for policy in policies %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="policy-card {{ policy.status }}">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="mb-1">{{ policy.name }}</h6>
+                                            <p class="small mb-0 text-muted">{{ policy.description[:60] }}{% if policy.description|length > 60 %}...{% endif %}</p>
+                                        </div>
+                                        <span class="policy-badge bg-{{ 'success' if policy.status == 'active' else 'warning' if policy.status == 'draft' else 'secondary' }}">
+                                            {{ policy.status|title }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <small class="text-muted">Type:</small>
+                                        <span class="badge bg-info ms-1">{{ policy.type|title }}</span>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <small class="text-muted">Severity:</small>
+                                        <span class="badge bg-{{ 'danger' if policy.severity == 'high' else 'warning' if policy.severity == 'medium' else 'info' }} ms-1">
+                                            {{ policy.severity|title }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">Last Modified: {{ policy.last_modified }}</small>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info" onclick="viewPolicy({{ loop.index0 }})">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" onclick="editPolicy({{ loop.index0 }})">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deletePolicy({{ loop.index0 }})">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-file-earmark-text display-4 text-muted"></i>
+                            <h5 class="mt-3">No Policies Found</h5>
+                            <p class="text-muted">Create your first DLP policy to get started.</p>
+                            <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createPolicyModal">
+                                <i class="bi bi-plus-circle"></i> Create First Policy
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Policy Details -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Policy Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="policyDetails" class="text-center py-4">
+                            <i class="bi bi-file-earmark-text display-4 text-info"></i>
+                            <p class="mt-2">Select a policy to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Policy Modal -->
+    <div class="modal fade" id="createPolicyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: #1e293b; border: 1px solid #475569;">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Create New Policy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="policyForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Policy Name</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Policy Type</label>
+                                <select class="form-control" name="type" required>
+                                    <option value="content">Content Detection</option>
+                                    <option value="pattern">Pattern Matching</option>
+                                    <option value="file">File Type</option>
+                                    <option value="custom">Custom Rule</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Severity Level</label>
+                                <select class="form-control" name="severity" required>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <select class="form-control" name="status" required>
+                                    <option value="draft">Draft</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="enforce" id="enforceCheck">
+                                    <label class="form-check-label" for="enforceCheck">
+                                        Enforce policy immediately
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createPolicy()">Create Policy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function filterPolicies(filter) {
+        const buttons = document.querySelectorAll('.btn-group .btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // In a real app, this would filter the policies
+        alert('Filtering by: ' + filter + ' (This would filter policies in a real implementation)');
+    }
+    
+    function viewPolicy(index) {
+        const policies = {{ policies|tojson|safe if policies else "[]" }};
+        const policy = policies[index];
+        
+        const detailsDiv = document.getElementById('policyDetails');
+        detailsDiv.innerHTML = `
+            <div class="policy-card ${policy.status}">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h4>${policy.name}</h4>
+                        <p class="mb-0">${policy.description}</p>
+                    </div>
+                    <span class="policy-badge bg-${policy.status == 'active' ? 'success' : policy.status == 'draft' ? 'warning' : 'secondary'}">
+                        ${policy.status.toUpperCase()}
+                    </span>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Type:</strong> <span class="badge bg-info">${policy.type.toUpperCase()}</span></p>
+                        <p><strong>Severity:</strong> <span class="badge bg-${policy.severity == 'high' ? 'danger' : policy.severity == 'medium' ? 'warning' : 'info'}">${policy.severity.toUpperCase()}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Created:</strong> ${policy.created}</p>
+                        <p><strong>Last Modified:</strong> ${policy.last_modified}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Rules:</h6>
+                    <div class="bg-dark p-3 rounded">
+                        <pre class="mb-0 text-info">${JSON.stringify(policy.rules, null, 2)}</pre>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn btn-${policy.status == 'active' ? 'warning' : 'success'}" onclick="togglePolicy(${index})">
+                        <i class="bi bi-power"></i> ${policy.status == 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-info" onclick="editPolicy(${index})">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deletePolicy(${index})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function createPolicy() {
+        const form = document.getElementById('policyForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        alert('Policy created: ' + data.name);
+        $('#createPolicyModal').modal('hide');
+        form.reset();
+        
+        // In real app, would submit via API
+        setTimeout(() => location.reload(), 1000);
+    }
+    
+    function editPolicy(index) {
+        alert('Editing policy: ' + index);
+        // Would open edit modal
+    }
+    
+    function deletePolicy(index) {
+        if (confirm('Are you sure you want to delete this policy?')) {
+            alert('Policy deleted (simulation)');
+            // In real app, would delete via API
+        }
+    }
+    
+    function togglePolicy(index) {
+        alert('Policy status toggled (simulation)');
+        // In real app, would toggle via API
+    }
+    </script>
+    
+    <!-- Include Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Scanner - DLP Security</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        .card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #475569;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-header {
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+            border-bottom: 1px solid #475569;
+            padding: 1.25rem;
+        }
+        
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .scan-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            border-left: 4px solid;
+        }
+        
+        .scan-card:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .scan-card.high-risk { border-left-color: #ef4444; }
+        .scan-card.medium-risk { border-left-color: #f59e0b; }
+        .scan-card.low-risk { border-left-color: #10b981; }
+        
+        .status-badge {
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .progress {
+            height: 10px;
+            border-radius: 10px;
+            background: #334155;
+        }
+        
+        .progress-bar {
+            border-radius: 10px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        }
+        
+        .form-control {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        
+        .form-control:focus {
+            background: #1e293b;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+            color: white;
+        }
+        
+        .table {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #475569;
+            font-weight: 600;
+        }
+        
+        .table td {
+            border-color: #475569;
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-search"></i> Start New Scan</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Scan Name</label>
+                                <input type="text" class="form-control" id="scanName" placeholder="Enter scan name" value="DLP Scan - {{ current_datetime.strftime('%Y-%m-%d %H:%M') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Scan Type</label>
+                                <select class="form-control" id="scanType">
+                                    <option value="quick">Quick Scan</option>
+                                    <option value="deep">Deep Scan</option>
+                                    <option value="custom">Custom Scan</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Path to Scan</label>
+                                <input type="text" class="form-control" id="scanPath" placeholder="Enter directory path" value=".">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="startScan()">
+                                    <i class="bi bi-play-circle"></i> Start Scan
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>DLP Engine Status:</strong>
+                                {% if dlp_available %}
+                                <span class="badge bg-success">Real DLP Engine Available</span>
+                                {% else %}
+                                <span class="badge bg-warning">Simulation Mode</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-speedometer"></i> Scan Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <div class="display-4 fw-bold" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                {{ scans|length }}
+                            </div>
+                            <p class="text-muted">Total Scans</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Completed</span>
+                                <span>{{ scans|selectattr('status', 'equalto', 'completed')|list|length }}</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ (scans|selectattr('status', 'equalto', 'completed')|list|length / scans|length * 100)|default(0) }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>In Progress</span>
+                                <span>{{ scans|selectattr('status', 'equalto', 'scanning')|list|length }}</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" style="width: {{ (scans|selectattr('status', 'equalto', 'scanning')|list|length / scans|length * 100)|default(0) }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Failed</span>
+                                <span>{{ scans|selectattr('status', 'equalto', 'failed')|list|length }}</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-danger" style="width: {{ (scans|selectattr('status', 'equalto', 'failed')|list|length / scans|length * 100)|default(0) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Scans</h5>
+                        <button class="btn btn-sm btn-outline-info" onclick="refreshScans()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Scan ID</th>
+                                        <th>Name</th>
+                                        <th>Path</th>
+                                        <th>Status</th>
+                                        <th>Files</th>
+                                        <th>Threats</th>
+                                        <th>Start Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for scan in scans[:10] %}
+                                    <tr>
+                                        <td><code>{{ scan.id[:10] }}...</code></td>
+                                        <td>{{ scan.name }}</td>
+                                        <td><small class="text-muted">{{ scan.path[:30] }}{% if scan.path|length > 30 %}...{% endif %}</small></td>
+                                        <td>
+                                            <span class="status-badge bg-{{ 'success' if scan.status == 'completed' else 'warning' if scan.status == 'scanning' else 'secondary' if scan.status == 'pending' else 'danger' }}">
+                                                {{ scan.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>{{ scan.files_scanned }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if scan.threats_found > 0 else 'success' }}">
+                                                {{ scan.threats_found }}
+                                            </span>
+                                        </td>
+                                        <td>{{ scan.start_time if scan.start_time else 'N/A' }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewScan('{{ scan.id }}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <i class="bi bi-search display-4 text-muted"></i>
+                                            <p class="mt-2">No scans found. Start your first scan!</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scan Results -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Scan Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="scanDetails">
+                            <div class="col-md-12 text-center py-5">
+                                <i class="bi bi-file-earmark-text display-4 text-muted"></i>
+                                <p class="mt-2">Select a scan to view details</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function startScan() {
+        const scanName = document.getElementById('scanName').value;
+        const scanType = document.getElementById('scanType').value;
+        const scanPath = document.getElementById('scanPath').value;
+        
+        fetch('/api/scan/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: scanName,
+                type: scanType,
+                path: scanPath
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Scan started successfully: ' + data.scan_id);
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error starting scan: ' + error);
+        });
+    }
+    
+    function viewScan(scanId) {
+        fetch('/api/scan/status/' + scanId)
+            .then(response => response.json())
+            .then(data => {
+                const detailsDiv = document.getElementById('scanDetails');
+                detailsDiv.innerHTML = `
+                    <div class="col-md-6">
+                        <div class="card bg-dark mb-3">
+                            <div class="card-header">
+                                <strong>Scan Information</strong>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>ID:</strong> <code>${data.id}</code></p>
+                                <p><strong>Name:</strong> ${data.name}</p>
+                                <p><strong>Type:</strong> ${data.type}</p>
+                                <p><strong>Path:</strong> ${data.path}</p>
+                                <p><strong>Started:</strong> ${data.start_time}</p>
+                                <p><strong>Status:</strong> <span class="badge bg-${data.status === 'completed' ? 'success' : data.status === 'scanning' ? 'warning' : 'secondary'}">${data.status}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-dark mb-3">
+                            <div class="card-header">
+                                <strong>Scan Results</strong>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Files Scanned:</strong> ${data.files_scanned || 0}</p>
+                                <p><strong>Threats Found:</strong> <span class="badge bg-${data.threats_found > 0 ? 'danger' : 'success'}">${data.threats_found || 0}</span></p>
+                                <p><strong>Total Matches:</strong> ${data.total_matches || 0}</p>
+                                ${data.duration ? `<p><strong>Duration:</strong> ${data.duration}</p>` : ''}
+                                ${data.end_time ? `<p><strong>End Time:</strong> ${data.end_time}</p>` : ''}
+                                ${data.error ? `<p><strong>Error:</strong> <span class="text-danger">${data.error}</span></p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                alert('Error loading scan details: ' + error);
+            });
+    }
+    
+    function refreshScans() {
+        location.reload();
+    }
+    </script>
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Management - DLP Security</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        .card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #475569;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .threat-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .threat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .threat-card.high { 
+            border-color: #ef4444; 
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent);
+        }
+        
+        .threat-card.medium { 
+            border-color: #f59e0b; 
+            border-left: 4px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.1), transparent);
+        }
+        
+        .threat-card.low { 
+            border-color: #3b82f6; 
+            border-left: 4px solid #3b82f6;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
+        }
+        
+        .threat-badge {
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-box.high { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
+        .stat-box.medium { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; }
+        .stat-box.low { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; }
+        
+        .stat-count {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.875rem;
+        }
+        
+        .table {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #475569;
+            font-weight: 600;
+        }
+        
+        .table td {
+            border-color: #475569;
+        }
+        
+        .badge {
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-weight: 600;
+        }
+        
+        .timeline {
+            border-left: 2px solid #3b82f6;
+            padding-left: 20px;
+            margin-left: 10px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .timeline-item.high::before { background: #ef4444; }
+        .timeline-item.medium::before { background: #f59e0b; }
+        .timeline-item.low::before { background: #3b82f6; }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container-fluid py-4">
+        <!-- Threat Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-box high">
+                    <div class="stat-count" style="color: #ef4444;">
+                        {{ threats|selectattr('severity', 'equalto', 'high')|list|length }}
+                    </div>
+                    <div class="stat-label" style="color: #ef4444;">High Severity</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-box medium">
+                    <div class="stat-count" style="color: #f59e0b;">
+                        {{ threats|selectattr('severity', 'equalto', 'medium')|list|length }}
+                    </div>
+                    <div class="stat-label" style="color: #f59e0b;">Medium Severity</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-box low">
+                    <div class="stat-count" style="color: #3b82f6;">
+                        {{ threats|selectattr('severity', 'equalto', 'low')|list|length }}
+                    </div>
+                    <div class="stat-label" style="color: #3b82f6;">Low Severity</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-box" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981;">
+                    <div class="stat-count" style="color: #10b981;">
+                        {{ threats|length }}
+                    </div>
+                    <div class="stat-label" style="color: #10b981;">Total Threats</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threats List and Filters -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Detected Threats</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-info me-2" onclick="refreshThreats()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="exportThreats()">
+                                <i class="bi bi-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6>Filter by Severity:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge bg-secondary filter-badge" onclick="filterThreats('all')">All ({{ threats|length }})</span>
+                                    <span class="badge bg-danger filter-badge" onclick="filterThreats('high')">High</span>
+                                    <span class="badge bg-warning filter-badge" onclick="filterThreats('medium')">Medium</span>
+                                    <span class="badge bg-info filter-badge" onclick="filterThreats('low')">Low</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Threat Name</th>
+                                        <th>Severity</th>
+                                        <th>Type</th>
+                                        <th>Location</th>
+                                        <th>Detected</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for threat in threats %}
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-exclamation-triangle me-2 text-{{ 'danger' if threat.severity == 'high' else 'warning' if threat.severity == 'medium' else 'info' }}"></i>
+                                            {{ threat.name }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if threat.severity == 'high' else 'warning' if threat.severity == 'medium' else 'info' }}">
+                                                {{ threat.severity|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ threat.type|title }}</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ threat.location }}</small>
+                                        </td>
+                                        <td>{{ threat.time }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'warning' if threat.status == 'new' else 'info' if threat.status == 'investigating' else 'success' }}">
+                                                {{ threat.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-info" onclick="viewThreat({{ loop.index0 }})">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" onclick="investigateThreat({{ loop.index0 }})">
+                                                    <i class="bi bi-search"></i>
+                                                </button>
+                                                <button class="btn btn-outline-success" onclick="resolveThreat({{ loop.index0 }})">
+                                                    <i class="bi bi-check"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <i class="bi bi-shield-check display-4 text-success"></i>
+                                            <p class="mt-2">No threats detected. System is clean.</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-activity"></i> Threat Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            {% for threat in threats[:5] %}
+                            <div class="timeline-item {{ threat.severity }}">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ threat.name }}</strong>
+                                    <small class="text-muted">{{ threat.time }}</small>
+                                </div>
+                                <p class="mb-0 small">{{ threat.description[:60] }}{% if threat.description|length > 60 %}...{% endif %}</p>
+                                <small class="text-muted">{{ threat.location }}</small>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-check-circle display-4 text-success"></i>
+                                <p class="mt-2">No recent threats</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threat Details -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Threat Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="threatDetails" class="text-center py-4">
+                            <i class="bi bi-exclamation-triangle display-4 text-info"></i>
+                            <p class="mt-2">Select a threat to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Threat Actions -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-tools"></i> Threat Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-danger w-100 py-3" onclick="quarantineAll()">
+                                    <i class="bi bi-shield-slash"></i> Quarantine All
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-warning w-100 py-3" onclick="ignoreAllLow()">
+                                    <i class="bi bi-eye-slash"></i> Ignore Low
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-info w-100 py-3" onclick="generateReport()">
+                                    <i class="bi bi-file-earmark-text"></i> Generate Report
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-success w-100 py-3" onclick="markAllResolved()">
+                                    <i class="bi bi-check-circle"></i> Mark All Resolved
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function filterThreats(severity) {
+        const badges = document.querySelectorAll('.filter-badge');
+        badges.forEach(badge => badge.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // In a real app, this would filter the threats
+        alert('Filtering threats by: ' + severity + ' severity');
+    }
+    
+    function viewThreat(index) {
+        const threats = {{ threats|tojson|safe }};
+        const threat = threats[index];
+        
+        const detailsDiv = document.getElementById('threatDetails');
+        detailsDiv.innerHTML = `
+            <div class="threat-card ${threat.severity}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h4><i class="bi bi-exclamation-triangle"></i> ${threat.name}</h4>
+                        <p class="mb-0">${threat.description}</p>
+                    </div>
+                    <span class="threat-badge bg-${threat.severity === 'high' ? 'danger' : threat.severity === 'medium' ? 'warning' : 'info'}">
+                        ${threat.severity.toUpperCase()}
+                    </span>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Type:</strong> ${threat.type}</p>
+                        <p><strong>Location:</strong> ${threat.location}</p>
+                        <p><strong>Detected:</strong> ${threat.time}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> <span class="badge bg-${threat.status === 'new' ? 'warning' : threat.status === 'investigating' ? 'info' : 'success'}">${threat.status.toUpperCase()}</span></p>
+                        <p><strong>Confidence:</strong> ${threat.confidence || 'High'}</p>
+                        <p><strong>Affected Files:</strong> ${threat.files || '1'}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Details:</h6>
+                    <div class="bg-dark p-3 rounded">
+                        <pre class="mb-0 small">${JSON.stringify(threat.details || {}, null, 2)}</pre>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn btn-${threat.severity === 'high' ? 'danger' : threat.severity === 'medium' ? 'warning' : 'info'}" onclick="investigateThreat(${index})">
+                        <i class="bi bi-search"></i> Investigate
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-warning" onclick="ignoreThreat(${index})">
+                            <i class="bi bi-eye-slash"></i> Ignore
+                        </button>
+                        <button class="btn btn-outline-success" onclick="resolveThreat(${index})">
+                            <i class="bi bi-check"></i> Resolve
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="quarantineThreat(${index})">
+                            <i class="bi bi-shield-slash"></i> Quarantine
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function investigateThreat(index) {
+        alert('Investigating threat: ' + index);
+        // Would open investigation panel
+    }
+    
+    function resolveThreat(index) {
+        if (confirm('Mark this threat as resolved?')) {
+            alert('Threat marked as resolved');
+            // In real app, would update via API
+        }
+    }
+    
+    function ignoreThreat(index) {
+        if (confirm('Ignore this threat?')) {
+            alert('Threat ignored');
+            // In real app, would update via API
+        }
+    }
+    
+    function quarantineThreat(index) {
+        if (confirm('Quarantine this threat?')) {
+            alert('Threat quarantined');
+            // In real app, would quarantine via API
+        }
+    }
+    
+    function refreshThreats() {
+        location.reload();
+    }
+    
+    function exportThreats() {
+        alert('Exporting threats to CSV...');
+        // Would trigger export
+    }
+    
+    function quarantineAll() {
+        if (confirm('Quarantine all high severity threats?')) {
+            alert('All high severity threats quarantined');
+            // In real app, would quarantine via API
+        }
+    }
+    
+    function ignoreAllLow() {
+        if (confirm('Ignore all low severity threats?')) {
+            alert('All low severity threats ignored');
+            // In real app, would update via API
+        }
+    }
+    
+    function generateReport() {
+        alert('Generating threat report...');
+        // Would generate report
+    }
+    
+    function markAllResolved() {
+        if (confirm('Mark all threats as resolved?')) {
+            alert('All threats marked as resolved');
+            // In real app, would update via API
+        }
+    }
+    </script>
+    {% endblock %}
+</body>
+</html>

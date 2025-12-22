@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - DLP Security</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        .card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #475569;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .user-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #475569;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .role-badge {
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-count {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+        }
+        
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .form-control {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        
+        .form-control:focus {
+            background: #1e293b;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+            color: white;
+        }
+        
+        .table {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #475569;
+            font-weight: 600;
+        }
+        
+        .table td {
+            border-color: #475569;
+        }
+        
+        .badge {
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-weight: 600;
+        }
+        
+        .activity-log {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            padding: 10px;
+            border-bottom: 1px solid #475569;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container-fluid py-4">
+        <!-- User Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6;">
+                    <div class="stat-count" style="color: #3b82f6;">
+                        {{ users|length }}
+                    </div>
+                    <div class="stat-label" style="color: #3b82f6;">Total Users</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444;">
+                    <div class="stat-count" style="color: #ef4444;">
+                        {{ users|selectattr('role', 'equalto', 'admin')|list|length }}
+                    </div>
+                    <div class="stat-label" style="color: #ef4444;">Admins</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981;">
+                    <div class="stat-count" style="color: #10b981;">
+                        {{ users|selectattr('role', 'equalto', 'user')|list|length }}
+                    </div>
+                    <div class="stat-label" style="color: #10b981;">Users</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b;">
+                    <div class="stat-count" style="color: #f59e0b;">
+                        {{ users|selectattr('role', 'equalto', 'auditor')|list|length }}
+                    </div>
+                    <div class="stat-label" style="color: #f59e0b;">Auditors</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users List and Actions -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> User Management</h5>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="bi bi-person-plus"></i> Add User
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Email</th>
+                                        <th>Last Login</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="user-avatar me-3">
+                                                    {{ user.username[0]|upper }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ user.username }}</strong>
+                                                    <div class="small text-muted">ID: {{ user.id }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="role-badge bg-{{ 'danger' if user.role == 'admin' else 'success' if user.role == 'user' else 'warning' }}">
+                                                {{ user.role|title }}
+                                            </span>
+                                        </td>
+                                        <td>{{ user.email }}</td>
+                                        <td>{{ user.last_login }}</td>
+                                        <td>
+                                            <span class="badge bg-success">Active</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-info" onclick="viewUser({{ loop.index0 }})">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" onclick="editUser({{ loop.index0 }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="deleteUser({{ loop.index0 }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <i class="bi bi-people display-4 text-muted"></i>
+                                            <p class="mt-2">No users found</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-activity"></i> Recent User Activity</h5>
+                    </div>
+                    <div class="card-body activity-log">
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>User Login</strong>
+                                <small class="text-muted">2 min ago</small>
+                            </div>
+                            <p class="mb-0 small">admin logged in from 192.168.1.100</p>
+                        </div>
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>Scan Started</strong>
+                                <small class="text-muted">15 min ago</small>
+                            </div>
+                            <p class="mb-0 small">user started a new DLP scan</p>
+                        </div>
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>Report Generated</strong>
+                                <small class="text-muted">30 min ago</small>
+                            </div>
+                            <p class="mb-0 small">auditor generated compliance report</p>
+                        </div>
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>Policy Updated</strong>
+                                <small class="text-muted">1 hour ago</small>
+                            </div>
+                            <p class="mb-0 small">admin updated DLP policy "Credit Card Detection"</p>
+                        </div>
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>User Created</strong>
+                                <small class="text-muted">2 hours ago</small>
+                            </div>
+                            <p class="mb-0 small">New user "analyst" created by admin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> User Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="userDetails" class="text-center py-4">
+                            <i class="bi bi-person-circle display-4 text-info"></i>
+                            <p class="mt-2">Select a user to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Roles Information -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-shield-check"></i> Role Permissions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="user-card">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="user-avatar me-3" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                                            A
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0">Admin</h5>
+                                            <p class="mb-0 small text-muted">Full system access</p>
+                                        </div>
+                                    </div>
+                                    <ul class="small">
+                                        <li>Manage all users and roles</li>
+                                        <li>Create and modify DLP policies</li>
+                                        <li>View all scans and reports</li>
+                                        <li>System configuration</li>
+                                        <li>Audit log access</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="user-card">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="user-avatar me-3" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                            U
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0">User</h5>
+                                            <p class="mb-0 small text-muted">Standard user access</p>
+                                        </div>
+                                    </div>
+                                    <ul class="small">
+                                        <li>Start and manage scans</li>
+                                        <li>View own scan results</li>
+                                        <li>Generate reports</li>
+                                        <li>View assigned policies</li>
+                                        <li>Basic system access</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="user-card">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="user-avatar me-3" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                            R
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0">Auditor</h5>
+                                            <p class="mb-0 small text-muted">Read-only access</p>
+                                        </div>
+                                    </div>
+                                    <ul class="small">
+                                        <li>View all scans and reports</li>
+                                        <li>Access audit logs</li>
+                                        <li>View DLP policies</li>
+                                        <li>Generate compliance reports</li>
+                                        <li>No modification rights</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: #1e293b; border: 1px solid #475569;">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Add New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" name="confirm_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-control" name="role" required>
+                                <option value="admin">Admin</option>
+                                <option value="user">User</option>
+                                <option value="auditor">Auditor</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addUser()">Create User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function viewUser(index) {
+        const users = {{ users|tojson|safe if users else "[]" }};
+        const user = users[index];
+        
+        const detailsDiv = document.getElementById('userDetails');
+        detailsDiv.innerHTML = `
+            <div class="user-card">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="user-avatar me-3" style="background: linear-gradient(135deg, ${user.role == 'admin' ? '#ef4444' : user.role == 'user' ? '#10b981' : '#f59e0b'}, ${user.role == 'admin' ? '#dc2626' : user.role == 'user' ? '#059669' : '#d97706'});">
+                        ${user.username[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <h3 class="mb-0">${user.username}</h3>
+                        <p class="mb-0 text-muted">${user.email}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>User ID:</strong> ${user.id}</p>
+                        <p><strong>Role:</strong> <span class="role-badge bg-${user.role == 'admin' ? 'danger' : user.role == 'user' ? 'success' : 'warning'}">${user.role.toUpperCase()}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                        <p><strong>Last Login:</strong> ${user.last_login}</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn btn-${user.role == 'admin' ? 'danger' : user.role == 'user' ? 'success' : 'warning'}" onclick="changeRole(${index})">
+                        <i class="bi bi-arrow-repeat"></i> Change Role
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-warning" onclick="editUser(${index})">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteUser(${index})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                        <button class="btn btn-outline-info" onclick="resetPassword(${index})">
+                            <i class="bi bi-key"></i> Reset Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function addUser() {
+        const form = document.getElementById('userForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        if (data.password !== data.confirm_password) {
+            alert('Passwords do not match!');
+            return;
+        }
+        
+        alert('User created: ' + data.username);
+        $('#addUserModal').modal('hide');
+        form.reset();
+        
+        // In real app, would submit via API
+        setTimeout(() => location.reload(), 1000);
+    }
+    
+    function editUser(index) {
+        alert('Editing user: ' + index);
+        // Would open edit modal
+    }
+    
+    function deleteUser(index) {
+        const users = {{ users|tojson|safe if users else "[]" }};
+        const user = users[index];
+        
+        if (confirm(`Are you sure you want to delete user "${user.username}"?`)) {
+            if (user.username === 'admin') {
+                alert('Cannot delete the admin user!');
+                return;
+            }
+            alert('User deleted: ' + user.username);
+            // In real app, would delete via API
+        }
+    }
+    
+    function changeRole(index) {
+        alert('Changing user role (simulation)');
+        // In real app, would change via API
+    }
+    
+    function resetPassword(index) {
+        if (confirm('Reset password for this user?')) {
+            const newPassword = prompt('Enter new password:');
+            if (newPassword) {
+                alert('Password reset successful (simulation)');
+                // In real app, would reset via API
+            }
+        }
+    }
+    </script>
+    
+    <!-- Include Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% endblock %}
+</body>
+</html>

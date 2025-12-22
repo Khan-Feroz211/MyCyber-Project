@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - DLP System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-file-alt"></i> Reports</h1>
+                <p class="lead">Generate and download security reports</p>
+            </div>
+            
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Report Generation Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4><i class="fas fa-plus-circle"></i> Generate New Report</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('generate_report') }}" id="report-form">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="report_name">Report Name</label>
+                                    <input type="text" class="form-control" id="report_name" name="report_name" 
+                                           placeholder="Enter report name" required value="Security Analysis Report">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="report_type">Format</label>
+                                    <select class="form-control" id="report_type" name="report_type" required>
+                                        <option value="pdf">PDF Document</option>
+                                        <option value="csv">CSV Spreadsheet</option>
+                                        <option value="html">HTML Report</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="report_range">Data Range</label>
+                                    <select class="form-control" id="report_range" name="report_range" required>
+                                        <option value="today">Today's Data</option>
+                                        <option value="week">Last Week</option>
+                                        <option value="all" selected>All Data</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block" id="generate-btn">
+                                        <i class="fas fa-magic"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <small>
+                                        <i class="fas fa-info-circle"></i> 
+                                        Reports are generated in the background. You can continue using the system while reports are being processed.
+                                        Progress will be updated automatically.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Reports List -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4><i class="fas fa-list"></i> Generated Reports</h4>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="refreshReports()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Report Name</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Size</th>
+                                    <th>Generated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body">
+                                {% for report in reports %}
+                                <tr id="report-{{ report.id }}">
+                                    <td>
+                                        <strong>{{ report.name }}</strong><br>
+                                        <small class="text-muted">ID: {{ report.id }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {% if report.type == 'pdf' %}
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                            {% elif report.type == 'csv' %}
+                                            <i class="fas fa-file-csv"></i> CSV
+                                            {% elif report.type == 'html' %}
+                                            <i class="fas fa-file-code"></i> HTML
+                                            {% else %}
+                                            <i class="fas fa-file"></i> {{ report.type|upper }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td id="status-{{ report.id }}">
+                                        {% if report.status == 'completed' %}
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-check-circle"></i> Completed
+                                        </span>
+                                        {% elif report.status == 'generating' %}
+                                        <span class="badge badge-warning">
+                                            <i class="fas fa-spinner fa-spin"></i> Generating
+                                        </span>
+                                        <div class="progress mt-1" style="height: 8px; width: 120px;">
+                                            <div id="progress-bar-{{ report.id }}" 
+                                                 class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                 role="progressbar" 
+                                                 style="width: {{ report.progress }}%" 
+                                                 aria-valuenow="{{ report.progress }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small id="progress-text-{{ report.id }}" class="text-muted">
+                                            {{ report.progress }}%
+                                        </small>
+                                        {% elif report.status == 'failed' %}
+                                        <span class="badge badge-danger">
+                                            <i class="fas fa-times-circle"></i> Failed
+                                        </span>
+                                        <small class="text-danger d-block">{{ report.error|default('Generation failed') }}</small>
+                                        {% else %}
+                                        <span class="badge badge-secondary">
+                                            <i class="fas fa-clock"></i> {{ report.status|title }}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td id="size-{{ report.id }}">{{ report.size }}</td>
+                                    <td id="generated-{{ report.id }}">
+                                        {{ report.generated|format_datetime if report.generated is string else report.generated }}
+                                    </td>
+                                    <td id="actions-{{ report.id }}">
+                                        {% if report.status == 'completed' %}
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('download_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-success" 
+                                               title="Download Report"
+                                               data-toggle="tooltip">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% if report.type == 'html' %}
+                                            <a href="{{ url_for('view_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-info" 
+                                               title="View Report" 
+                                               target="_blank"
+                                               data-toggle="tooltip">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-secondary" 
+                                                    onclick="copyReportLink('{{ report.id }}')"
+                                                    title="Copy Link"
+                                                    data-toggle="tooltip">
+                                                <i class="fas fa-link"></i>
+                                            </button>
+                                        </div>
+                                        {% elif report.status == 'generating' %}
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-spinner fa-spin"></i> Processing
+                                        </button>
+                                        {% elif report.status == 'failed' %}
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="retryReport('{{ report.id }}')"
+                                                title="Retry Generation">
+                                            <i class="fas fa-redo"></i> Retry
+                                        </button>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                        <h4>No reports generated yet</h4>
+                        <p class="text-muted">Generate your first report using the form above.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        <i class="fas fa-info-circle"></i> 
+                        Reports are stored in the 'reports' directory. Generated files are automatically cleaned up after 7 days.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to check report status and update UI
+function checkReportStatus(reportId) {
+    console.log(`Checking status for report: ${reportId}`);
+    
+    fetch(`/get_report_status/${reportId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(`Status data for ${reportId}:`, data);
+            
+            const statusElement = document.getElementById(`status-${reportId}`);
+            const sizeElement = document.getElementById(`size-${reportId}`);
+            const generatedElement = document.getElementById(`generated-${reportId}`);
+            const actionsElement = document.getElementById(`actions-${reportId}`);
+            const progressBar = document.getElementById(`progress-bar-${reportId}`);
+            const progressText = document.getElementById(`progress-text-${reportId}`);
+            
+            if (!statusElement) {
+                console.warn(`Element status-${reportId} not found`);
+                return;
+            }
+            
+            if (data.status === 'completed') {
+                // Update status
+                statusElement.innerHTML = `
+                    <span class="badge badge-success">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </span>
+                `;
+                
+                // Update size if available
+                if (sizeElement && data.size) {
+                    sizeElement.textContent = data.size;
+                }
+                
+                // Update generated time if available
+                if (generatedElement && data.generated) {
+                    generatedElement.textContent = data.generated;
+                }
+                
+                // Update actions
+                if (actionsElement) {
+                    const reportType = document.querySelector(`#report-${reportId} .badge-info`).textContent.toLowerCase();
+                    const isHtml = reportType.includes('html');
+                    
+                    actionsElement.innerHTML = `
+                        <div class="btn-group" role="group">
+                            <a href="/download_report/${reportId}" 
+                               class="btn btn-sm btn-success" 
+                               title="Download Report"
+                               data-toggle="tooltip">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            ${isHtml ? `
+                            <a href="/view_report/${reportId}" 
+                               class="btn btn-sm btn-info" 
+                               title="View Report" 
+                               target="_blank"
+                               data-toggle="tooltip">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            ` : ''}
+                            <button class="btn btn-sm btn-outline-secondary" 
+                                    onclick="copyReportLink('${reportId}')"
+                                    title="Copy Link"
+                                    data-toggle="tooltip">
+                                <i class="fas fa-link"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                // Initialize tooltips
+                $('[data-toggle="tooltip"]').tooltip();
+                
+            } else if (data.status === 'generating') {
+                // Update progress
+                if (progressBar && data.progress !== undefined) {
+                    progressBar.style.width = `${data.progress}%`;
+                    progressBar.setAttribute('aria-valuenow', data.progress);
+                }
+                
+                if (progressText && data.progress !== undefined) {
+                    progressText.textContent = `${data.progress}%`;
+                }
+                
+                // Update size if available
+                if (sizeElement && data.size) {
+                    sizeElement.textContent = data.size;
+                }
+                
+                // Continue checking if still generating
+                setTimeout(() => checkReportStatus(reportId), 2000);
+                
+            } else if (data.status === 'failed') {
+                // Show error status
+                statusElement.innerHTML = `
+                    <span class="badge badge-danger">
+                        <i class="fas fa-times-circle"></i> Failed
+                    </span>
+                    <small class="text-danger d-block">${data.error || 'Generation failed'}</small>
+                `;
+                
+                // Update actions for retry
+                if (actionsElement) {
+                    actionsElement.innerHTML = `
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="retryReport('${reportId}')"
+                                title="Retry Generation">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                    `;
+                }
+            }
+        })
+        .catch(error => {
+            console.error(`Error checking report status for ${reportId}:`, error);
+            // Retry after 3 seconds on network error
+            setTimeout(() => checkReportStatus(reportId), 3000);
+        });
+}
+
+// Function to check all generating reports
+function checkAllGeneratingReports() {
+    console.log('Checking all generating reports...');
+    
+    // Find all report rows
+    const reportRows = document.querySelectorAll('[id^="report-"]');
+    
+    reportRows.forEach(row => {
+        const reportId = row.id.replace('report-', '');
+        const statusElement = document.getElementById(`status-${reportId}`);
+        
+        if (statusElement) {
+            const statusText = statusElement.textContent || '';
+            if (statusText.includes('Generating') || statusText.includes('processing')) {
+                checkReportStatus(reportId);
+            }
+        }
+    });
+}
+
+// Function to copy report link to clipboard
+function copyReportLink(reportId) {
+    const reportUrl = `${window.location.origin}/download_report/${reportId}`;
+    
+    navigator.clipboard.writeText(reportUrl)
+        .then(() => {
+            // Show success message
+            const originalTitle = event.target.getAttribute('title');
+            event.target.setAttribute('title', 'Link copied!');
+            $(event.target).tooltip('show');
+            
+            // Reset tooltip after 2 seconds
+            setTimeout(() => {
+                event.target.setAttribute('title', originalTitle);
+                $(event.target).tooltip('hide');
+            }, 2000);
+        })
+        .catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy link to clipboard');
+        });
+}
+
+// Function to retry failed report
+function retryReport(reportId) {
+    if (confirm('Retry generating this report?')) {
+        // Change status to generating
+        const statusElement = document.getElementById(`status-${reportId}`);
+        const actionsElement = document.getElementById(`actions-${reportId}`);
+        
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <span class="badge badge-warning">
+                    <i class="fas fa-spinner fa-spin"></i> Retrying...
+                </span>
+                <div class="progress mt-1" style="height: 8px; width: 120px;">
+                    <div id="progress-bar-${reportId}" 
+                         class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: 0%" 
+                         aria-valuenow="0" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <small id="progress-text-${reportId}" class="text-muted">0%</small>
+            `;
+        }
+        
+        if (actionsElement) {
+            actionsElement.innerHTML = `
+                <button class="btn btn-sm btn-secondary" disabled>
+                    <i class="fas fa-spinner fa-spin"></i> Retrying
+                </button>
+            `;
+        }
+        
+        // Start checking status
+        setTimeout(() => checkReportStatus(reportId), 1000);
+    }
+}
+
+// Function to refresh reports list
+function refreshReports() {
+    location.reload();
+}
+
+// Start checking when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Reports page loaded, initializing...');
+    
+    // Initialize Bootstrap tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Check all generating reports
+    checkAllGeneratingReports();
+    
+    // Also check every 3 seconds for any new generating reports
+    setInterval(checkAllGeneratingReports, 3000);
+    
+    // Handle form submission to show immediate feedback
+    const reportForm = document.getElementById('report-form');
+    const generateBtn = document.getElementById('generate-btn');
+    
+    if (reportForm && generateBtn) {
+        reportForm.addEventListener('submit', function(e) {
+            // Don't prevent default - let the form submit normally
+            // Just update button state
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            generateBtn.disabled = true;
+            
+            // Add a small delay before the page refreshes
+            setTimeout(() => {
+                generateBtn.innerHTML = '<i class="fas fa-check"></i> Submitted';
+            }, 500);
+        });
+    }
+    
+    // Auto-refresh the page if there are generating reports
+    const hasGeneratingReports = document.querySelector('.badge-warning');
+    if (hasGeneratingReports) {
+        // Refresh page after 30 seconds if still generating (as fallback)
+        setTimeout(() => {
+            if (document.querySelector('.badge-warning')) {
+                console.log('Auto-refreshing page after 30 seconds...');
+                refreshReports();
+            }
+        }, 30000);
+    }
+});
+</script>
+{% endblock %}
