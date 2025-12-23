@@ -8,7 +8,7 @@ EXCEL DATABASES (4 files):
   3. Healthcare_Records.xlsx             - 30 patient records (HIPAA sensitive)
   4. Financial_Transactions.xlsx         - 200 financial transactions
 
-TEXT DATABASES (5 files):
+TEXT DATABASES (4 files):
   1. production.env                      - Production configuration with secrets
   2. database_credentials.txt            - Database passwords and connection strings
   3. production_dump.sql                 - SQL dump with sensitive data
@@ -18,8 +18,8 @@ CSV DATABASES (2 files):
   1. credit_card_transactions.csv        - Credit card transaction data
   2. employee_ssn_list.csv               - Employee SSN listing
 
-TOTAL FILES: 11
-TOTAL SIZE: 78.8 KB
+TOTAL FILES: 10
+TOTAL SIZE: 76.5 KB
 
 SENSITIVE DATA TYPES INCLUDED:
   ✅ Credit Card Numbers
