@@ -1,0 +1,29 @@
+[flake8]
+exclude = 
+    clean_get_next.py,
+    fix_functions.py,
+    apply_correct_fix.py,
+    clean_version.py,
+    create_fixed_app.py,
+    find_dict_access.py,
+    fix_get_next_user_id.py,
+    test_fixed_registration.py,
+    test_registration.py,
+    __pycache__,
+    .git,
+    .venv,
+    *.pyc,
+    *.pyo,
+    *.pyd,
+    .Python,
+    env,
+    venv,
+    ENV,
+    env.bak,
+    venv.bak
+max-line-length = 120
+ignore = 
+    E203,  # whitespace before ':'
+    W503,  # line break before binary operator
+    E501,  # line too long (handled by max-line-length)
+    F821   # undefined name (temporarily for test files)

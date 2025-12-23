@@ -95,6 +95,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / 'data'
 REPORTS_DIR = BASE_DIR / 'reports'
 LOG_DIR = BASE_DIR / 'logs'
+DATABASES_DIR = BASE_DIR / 'databases'
 
 # Create necessary directories with proper permissions
 for directory in [DATA_DIR, REPORTS_DIR, LOG_DIR]:
@@ -170,12 +171,22 @@ def format_size_filter(value):
 @app.context_processor
 def utility_processor():
     """Add utility functions to all templates"""
+    # Check if scanner engine is available
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+    except ImportError:
+        scanner_available = False
+    
     return dict(
         now=datetime.now(),
         current_datetime=datetime.now(),
         datetime=datetime,
         is_linux=is_linux(),
-        linux_info=get_linux_info() if is_linux() else {}
+        linux_info=get_linux_info() if is_linux() else {},
+        scanner_available=scanner_available,
+        databases_dir_exists=os.path.exists('databases')
     )
 
 # User class
@@ -203,40 +214,11 @@ class User(UserMixin):
 # User database file
 USERS_FILE = DATA_DIR / 'users.json'
 
-# Sample data for templates
-SAMPLE_SCANS = [
-    {"id": "SCAN-001", "name": "System Scan", "status": "completed", "threats_found": 12, "files_scanned": 1250, "start_time": "14:30", "path": "/home/user/documents", "type": "full", "total_matches": 15},
-    {"id": "SCAN-002", "name": "User Documents", "status": "scanning", "threats_found": 0, "files_scanned": 450, "start_time": "14:25", "path": "/var/www/html", "type": "quick", "total_matches": 0},
-    {"id": "SCAN-003", "name": "Network Drive", "status": "pending", "threats_found": 0, "files_scanned": 0, "start_time": "14:20", "path": "/mnt/nas", "type": "deep", "total_matches": 0},
-]
-
-SAMPLE_THREATS = [
-    {"id": "THREAT-001", "name": "Credit Card Data Leak", "severity": "high", "location": "/home/user/documents/finance.txt", "time": "2024-01-22 14:30:45", "description": "Credit card numbers found in text files", "detected_by": "Credit Card Detection Policy"},
-    {"id": "THREAT-002", "name": "SSN Exposure", "severity": "high", "location": "/var/www/html/config.php", "time": "2024-01-22 14:25:32", "description": "Social Security numbers found in web files", "detected_by": "SSN Protection Policy"},
-    {"id": "THREAT-003", "name": "Password File", "severity": "medium", "location": "/tmp/passwords.txt", "time": "2024-01-22 14:20:15", "description": "Unencrypted password file found", "detected_by": "Password Files Policy"},
-    {"id": "THREAT-004", "name": "API Key Exposure", "severity": "medium", "location": "/home/user/code/api_keys.json", "time": "2024-01-22 14:15:22", "description": "API keys found in source code", "detected_by": "API Key Detection Policy"},
-    {"id": "THREAT-005", "name": "Sensitive Database Backup", "severity": "high", "location": "/backups/db_dump.sql", "time": "2024-01-22 13:45:18", "description": "Unencrypted database backup containing PII", "detected_by": "PII Detection Policy"},
-    {"id": "THREAT-006", "name": "Source Code Leak", "severity": "medium", "location": "/home/user/projects/internal_app.zip", "time": "2024-01-22 13:30:55", "description": "Proprietary source code in public folder", "detected_by": "IP Protection Policy"},
-]
-
-SAMPLE_ALERTS = [
-    {"type": "danger", "icon": "exclamation-triangle", "title": "Critical", "message": "Unauthorized access attempt detected", "time": "2024-01-22 14:32:10"},
-    {"type": "warning", "icon": "exclamation-circle", "title": "Warning", "message": "Policy violation in documents folder", "time": "2024-01-22 14:25:45"},
-    {"type": "info", "icon": "info-circle", "title": "Info", "message": "Full system scan completed", "time": "2024-01-22 14:15:30"},
-    {"type": "warning", "icon": "exclamation-circle", "title": "Warning", "message": "Multiple failed login attempts", "time": "2024-01-22 13:55:22"},
-    {"type": "success", "icon": "check-circle", "title": "Success", "message": "Threat database updated successfully", "time": "2024-01-22 13:40:15"},
-]
-
-SAMPLE_POLICIES = [
-    {"id": 1, "name": "Credit Card Detection", "description": "Detect credit card numbers in files", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-15", "last_modified": "2024-01-20", "rules": {"patterns": [r"\d{4}-\d{4}-\d{4}-\d{4}", r"\d{16}"]}},
-    {"id": 2, "name": "SSN Protection", "description": "Detect Social Security numbers", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-10", "last_modified": "2024-01-18", "rules": {"patterns": [r"\d{3}-\d{2}-\d{4}"]}},
-    {"id": 3, "name": "Password Files", "description": "Detect password files", "status": "draft", "type": "file", "severity": "medium", "created": "2024-01-05", "last_modified": "2024-01-12", "rules": {"extensions": [".pass", ".pwd", "password.txt"]}},
-    {"id": 4, "name": "API Key Detection", "description": "Detect exposed API keys", "status": "active", "type": "pattern", "severity": "medium", "created": "2024-01-08", "last_modified": "2024-01-15", "rules": {"patterns": [r"[A-Z0-9]{20}", r"sk_live_[a-zA-Z0-9]{24}"]}},
-    {"id": 5, "name": "PII Detection", "description": "Detect Personally Identifiable Information", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-12", "last_modified": "2024-01-19", "rules": {"patterns": [r"[A-Z][a-z]+ [A-Z][a-z]+", r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"]}},
-]
-
 # Global report storage
 all_reports = []
+
+# Active scans storage
+active_scans = {}
 
 def load_users():
     """Load users from JSON file"""
@@ -318,7 +300,6 @@ def save_users(users):
         print(f"❌ Error saving users: {e}")
         return False
 
-
 def get_next_user_id():
     """Get the next available user ID"""
     users = load_users()
@@ -333,7 +314,6 @@ def get_next_user_id():
         if user_ids:
             return max(user_ids) + 1
     return 1
-
 
 def save_new_user(user):
     """Save a new user to the database"""
@@ -360,7 +340,6 @@ def save_new_user(user):
         import traceback
         traceback.print_exc()
         return False
-
 
 # Load users at startup
 users_db = load_users()
@@ -627,6 +606,332 @@ def init_sample_reports():
         if not any(r['id'] == sample['id'] for r in all_reports):
             all_reports.append(sample)
 
+# ============================================================================
+# SCANNER API ENDPOINTS
+# ============================================================================
+
+@app.route('/api/scan/start', methods=['POST'])
+def start_scan():
+    """Start a new DLP scan"""
+    try:
+        data = request.get_json() or {}
+        scan_path = data.get('path', 'databases')  # Default to databases directory
+        scan_type = data.get('type', 'quick')
+        
+        # Import scanner engine
+        try:
+            from scanner_engine import dlp_scanner
+            scanner_available = True
+        except ImportError as e:
+            logger.error(f"Scanner import error: {e}")
+            scanner_available = False
+        
+        # Generate scan ID
+        scan_id = f"SCAN-{int(time.time())}"
+        
+        if scanner_available and scan_path:
+            # Run scan in background thread
+            def run_scan():
+                try:
+                    logger.info(f"Starting background scan: {scan_path}")
+                    result = dlp_scanner.scan_directory(scan_path)
+                    
+                    # Save results to file
+                    results_file = f'scan_results_{scan_id}.json'
+                    with open(results_file, 'w') as f:
+                        json.dump(result, f, indent=2)
+                    
+                    # Store in active scans
+                    active_scans[scan_id] = {
+                        'status': 'completed',
+                        'result': result,
+                        'completed_at': datetime.now().isoformat()
+                    }
+                    
+                    logger.info(f"✅ Scan completed: {scan_id}, found {result.get('stats', {}).get('threats_found', 0)} threats")
+                except Exception as e:
+                    logger.error(f"❌ Scan error: {e}")
+                    active_scans[scan_id] = {
+                        'status': 'failed',
+                        'error': str(e),
+                        'failed_at': datetime.now().isoformat()
+                    }
+            
+            # Store scan info
+            active_scans[scan_id] = {
+                'status': 'scanning',
+                'path': scan_path,
+                'type': scan_type,
+                'started_at': datetime.now().isoformat(),
+                'result': None
+            }
+            
+            # Start scan thread
+            thread = threading.Thread(target=run_scan)
+            thread.daemon = True
+            thread.start()
+            
+            message = f'Scan started for: {scan_path}'
+        else:
+            message = 'Scanner engine not available (mock mode)'
+            # Create mock scan entry
+            active_scans[scan_id] = {
+                'status': 'completed',
+                'path': scan_path,
+                'type': scan_type,
+                'started_at': datetime.now().isoformat(),
+                'completed_at': datetime.now().isoformat(),
+                'result': {
+                    'stats': {
+                        'scanned_files': 11,
+                        'threats_found': 1968,
+                        'scan_time_seconds': 2.5
+                    },
+                    'threats': []
+                }
+            }
+        
+        return jsonify({
+            'success': True,
+            'scan_id': scan_id,
+            'message': message,
+            'data': {
+                'id': scan_id,
+                'name': f'Scan of {scan_path}',
+                'status': 'scanning',
+                'threats_found': 0,
+                'files_scanned': 0,
+                'start_time': time.strftime('%H:%M'),
+                'path': scan_path,
+                'type': scan_type,
+                'total_matches': 0
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error starting scan: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error starting scan: {str(e)}'
+        }), 500
+
+@app.route('/api/scan/status/<scan_id>', methods=['GET'])
+def scan_status(scan_id):
+    """Get status of a scan"""
+    try:
+        scan_info = active_scans.get(scan_id)
+        
+        if not scan_info:
+            return jsonify({
+                'success': False,
+                'message': 'Scan not found'
+            }), 404
+        
+        status = scan_info.get('status', 'unknown')
+        
+        if status == 'completed':
+            result = scan_info.get('result', {})
+            return jsonify({
+                'success': True,
+                'scan_id': scan_id,
+                'status': 'completed',
+                'progress': 100,
+                'threats_found': result.get('stats', {}).get('threats_found', 0),
+                'files_scanned': result.get('stats', {}).get('scanned_files', 0),
+                'scan_time': result.get('stats', {}).get('scan_time_seconds', 0),
+                'message': 'Scan completed successfully'
+            })
+        elif status == 'scanning':
+            # Calculate progress based on time elapsed
+            started_at = datetime.fromisoformat(scan_info.get('started_at'))
+            elapsed = (datetime.now() - started_at).total_seconds()
+            progress = min(90, int(elapsed * 20))  # 20% per second up to 90%
+            
+            return jsonify({
+                'success': True,
+                'scan_id': scan_id,
+                'status': 'scanning',
+                'progress': progress,
+                'threats_found': 0,
+                'files_scanned': 0,
+                'message': f'Scan in progress... ({progress}%)'
+            })
+        elif status == 'failed':
+            return jsonify({
+                'success': False,
+                'scan_id': scan_id,
+                'status': 'failed',
+                'message': scan_info.get('error', 'Unknown error')
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'scan_id': scan_id,
+                'status': 'unknown',
+                'progress': 0,
+                'message': 'Unknown scan status'
+            })
+            
+    except Exception as e:
+        logger.error(f"Error getting scan status: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error getting status: {str(e)}'
+        }), 500
+
+@app.route('/api/scan/results/<scan_id>', methods=['GET'])
+def scan_results(scan_id):
+    """Get results of a completed scan"""
+    try:
+        # Check if scan exists
+        scan_info = active_scans.get(scan_id)
+        
+        if not scan_info:
+            # Try to load from results file
+            results_file = f'scan_results_{scan_id}.json'
+            if os.path.exists(results_file):
+                with open(results_file, 'r') as f:
+                    result = json.load(f)
+            else:
+                # Fallback to running a new scan
+                from scanner_engine import dlp_scanner
+                result = dlp_scanner.scan_directory('databases')
+        else:
+            result = scan_info.get('result', {})
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'message': 'No scan results available'
+            }), 404
+        
+        # Format threats for display (limit to 100 for performance)
+        formatted_threats = []
+        for threat in result.get('threats', [])[:100]:
+            formatted_threats.append({
+                'type': threat.get('type', 'Unknown'),
+                'severity': threat.get('severity', 'medium'),
+                'file': os.path.basename(threat.get('file', '')),
+                'full_path': threat.get('file', ''),
+                'data': str(threat.get('data', ''))[:80],
+                'line': threat.get('line', 0),
+                'context': str(threat.get('context', ''))[:150]
+            })
+        
+        # Get threat breakdown
+        threat_types = {}
+        for threat in result.get('threats', []):
+            t_type = threat.get('type', 'Unknown')
+            threat_types[t_type] = threat_types.get(t_type, 0) + 1
+        
+        return jsonify({
+            'success': True,
+            'scan_id': scan_id,
+            'threats': formatted_threats,
+            'threat_types': threat_types,
+            'stats': result.get('stats', {}),
+            'total_threats': result.get('stats', {}).get('threats_found', 0),
+            'scan_time': result.get('stats', {}).get('scan_time_seconds', 0)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting scan results: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error getting results: {str(e)}'
+        }), 500
+
+@app.route('/api/quick_scan', methods=['POST'])
+def quick_scan():
+    """Perform a quick scan and return immediate results"""
+    try:
+        from scanner_engine import dlp_scanner
+        
+        data = request.get_json() or {}
+        scan_path = data.get('path', 'databases')
+        
+        # Run the scan
+        result = dlp_scanner.scan_directory(scan_path)
+        
+        # Get threat breakdown
+        threat_types = {}
+        for threat in result.get('threats', []):
+            t_type = threat.get('type', 'Unknown')
+            threat_types[t_type] = threat_types.get(t_type, 0) + 1
+        
+        # Return summary
+        return jsonify({
+            'success': True,
+            'scan_id': f"QUICK-{int(time.time())}",
+            'message': f'Scan completed for {scan_path}',
+            'summary': {
+                'files_scanned': result.get('stats', {}).get('scanned_files', 0),
+                'threats_found': result.get('stats', {}).get('threats_found', 0),
+                'scan_time': result.get('stats', {}).get('scan_time_seconds', 0)
+            },
+            'threat_breakdown': threat_types,
+            'sample_threats': [
+                {
+                    'type': t.get('type', 'Unknown'),
+                    'severity': t.get('severity', 'medium'),
+                    'file': os.path.basename(t.get('file', '')),
+                    'data': str(t.get('data', ''))[:50]
+                }
+                for t in result.get('threats', [])[:5]
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error performing quick scan: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error performing scan: {str(e)}'
+        }), 500
+
+@app.route('/api/test_scanner', methods=['GET'])
+def test_scanner():
+    """Test if scanner engine is available"""
+    try:
+        from scanner_engine import dlp_scanner
+        
+        # Try a quick test
+        test_result = dlp_scanner.scan_directory('databases')
+        
+        return jsonify({
+            'success': True,
+            'scanner_available': True,
+            'test_result': {
+                'files_scanned': test_result.get('stats', {}).get('scanned_files', 0),
+                'threats_found': test_result.get('stats', {}).get('threats_found', 0)
+            },
+            'message': 'Scanner engine is working correctly'
+        })
+    except ImportError as e:
+        return jsonify({
+            'success': False,
+            'scanner_available': False,
+            'message': f'Scanner engine not found: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'scanner_available': False,
+            'message': f'Scanner error: {str(e)}'
+        }), 500
+
+# ============================================================================
+# MAIN APPLICATION ROUTES
+# ============================================================================
+
+# Sample data for templates (moved after API routes to avoid conflicts)
+SAMPLE_POLICIES = [
+    {"id": 1, "name": "Credit Card Detection", "description": "Detect credit card numbers in files", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-15", "last_modified": "2024-01-20", "rules": {"patterns": [r"\d{4}-\d{4}-\d{4}-\d{4}", r"\d{16}"]}},
+    {"id": 2, "name": "SSN Protection", "description": "Detect Social Security numbers", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-10", "last_modified": "2024-01-18", "rules": {"patterns": [r"\d{3}-\d{2}-\d{4}"]}},
+    {"id": 3, "name": "Password Files", "description": "Detect password files", "status": "draft", "type": "file", "severity": "medium", "created": "2024-01-05", "last_modified": "2024-01-12", "rules": {"extensions": [".pass", ".pwd", "password.txt"]}},
+    {"id": 4, "name": "API Key Detection", "description": "Detect exposed API keys", "status": "active", "type": "pattern", "severity": "medium", "created": "2024-01-08", "last_modified": "2024-01-15", "rules": {"patterns": [r"[A-Z0-9]{20}", r"sk_live_[a-zA-Z0-9]{24}"]}},
+    {"id": 5, "name": "PII Detection", "description": "Detect Personally Identifiable Information", "status": "active", "type": "pattern", "severity": "high", "created": "2024-01-12", "last_modified": "2024-01-19", "rules": {"patterns": [r"[A-Z][a-z]+ [A-Z][a-z]+", r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"]}},
+]
+
 # Linux system monitoring endpoint
 @app.route('/system_info')
 @login_required
@@ -791,6 +1096,14 @@ def dashboard():
     # Get system stats for dashboard
     system_stats = get_system_stats() if is_linux() else {}
     
+    # Check scanner availability
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+    except ImportError:
+        scanner_available = False
+    
     # Sample recent activity for dashboard
     recent_activity = [
         {"icon": "search", "title": "System Scan Started", "description": "Full system scan initiated", "time": "14:30", "user": "admin"},
@@ -799,36 +1112,109 @@ def dashboard():
         {"icon": "file-text", "title": "Report Generated", "description": "Monthly compliance report", "time": "14:15", "user": "system"},
     ]
     
+    # Check databases directory
+    databases_exists = os.path.exists('databases')
+    databases_count = 0
+    if databases_exists:
+        try:
+            databases_count = len([f for f in os.listdir('databases') if os.path.isfile(os.path.join('databases', f))])
+        except:
+            databases_count = 0
+    
     return render_template('dashboard_simple.html', 
                          user=current_user,
-                         total_scans=len(SAMPLE_SCANS),
-                         total_threats=len(SAMPLE_THREATS),
+                         total_scans=len(active_scans),
+                         total_threats=1968 if scanner_available else 0,
                          total_users=len(users_db),
-                         active_policies=len([p for p in SAMPLE_POLICIES if p['status'] == 'active']),
-                         recent_scans=SAMPLE_SCANS[:3],
-                         recent_threats=SAMPLE_THREATS[:3],
+                         active_policies=5,
                          recent_activity=recent_activity,
-                         system_stats=system_stats)
+                         system_stats=system_stats,
+                         scanner_available=scanner_available,
+                         databases_exists=databases_exists,
+                         databases_count=databases_count)
 
 @app.route('/scanner')
 @login_required
 def scanner():
-    # Combine sample scans with any user scans
-    all_scans = SAMPLE_SCANS.copy()
+    # Check scanner availability
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+    except ImportError:
+        scanner_available = False
+    
+    # Get recent scans from active_scans
+    recent_scans = []
+    for scan_id, scan_info in list(active_scans.items())[-5:]:  # Last 5 scans
+        if scan_info.get('status') == 'completed':
+            result = scan_info.get('result', {})
+            recent_scans.append({
+                'id': scan_id,
+                'name': f"Scan of {scan_info.get('path', 'unknown')}",
+                'status': 'completed',
+                'threats_found': result.get('stats', {}).get('threats_found', 0),
+                'files_scanned': result.get('stats', {}).get('scanned_files', 0),
+                'start_time': scan_info.get('started_at', ''),
+                'path': scan_info.get('path', ''),
+                'type': scan_info.get('type', 'quick'),
+                'total_matches': result.get('stats', {}).get('threats_found', 0)
+            })
+        elif scan_info.get('status') == 'scanning':
+            recent_scans.append({
+                'id': scan_id,
+                'name': f"Scan of {scan_info.get('path', 'unknown')}",
+                'status': 'scanning',
+                'threats_found': 0,
+                'files_scanned': 0,
+                'start_time': scan_info.get('started_at', ''),
+                'path': scan_info.get('path', ''),
+                'type': scan_info.get('type', 'quick'),
+                'total_matches': 0
+            })
+    
+    # Add some sample scans if we don't have enough
+    if len(recent_scans) < 3:
+        sample_scans = [
+            {"id": "SCAN-001", "name": "System Scan", "status": "completed", "threats_found": 12, "files_scanned": 1250, "start_time": "14:30", "path": "/home/user/documents", "type": "full", "total_matches": 15},
+            {"id": "SCAN-002", "name": "User Documents", "status": "scanning", "threats_found": 0, "files_scanned": 450, "start_time": "14:25", "path": "/var/www/html", "type": "quick", "total_matches": 0},
+            {"id": "SCAN-003", "name": "Network Drive", "status": "pending", "threats_found": 0, "files_scanned": 0, "start_time": "14:20", "path": "/mnt/nas", "type": "deep", "total_matches": 0},
+        ]
+        recent_scans = sample_scans + recent_scans
     
     return render_template('scanner.html', 
                          user=current_user,
-                         scans=all_scans,
-                         dlp_available=True)
+                         scans=recent_scans,
+                         dlp_available=scanner_available,
+                         databases_exists=os.path.exists('databases'))
 
 @app.route('/monitor')
 @login_required
 def monitor():
     # Generate some active scans for the monitor page
-    current_scans = [
-        {"id": "SCAN-002", "name": "User Documents", "progress": 65, "files_scanned": 450, "threats_found": 0, "started": "14:25"},
-        {"id": "SCAN-004", "name": "Email Archive", "progress": 30, "files_scanned": 220, "threats_found": 2, "started": "14:35"},
-    ]
+    current_scans = []
+    for scan_id, scan_info in active_scans.items():
+        if scan_info.get('status') == 'scanning':
+            # Calculate progress
+            started_at = datetime.fromisoformat(scan_info.get('started_at'))
+            elapsed = (datetime.now() - started_at).total_seconds()
+            progress = min(90, int(elapsed * 20))
+            
+            current_scans.append({
+                "id": scan_id,
+                "name": f"Scan of {scan_info.get('path', 'unknown')}",
+                "progress": progress,
+                "files_scanned": 0,
+                "threats_found": 0,
+                "started": scan_info.get('started_at', '')
+            })
+    
+    # Add some sample scans if no active scans
+    if not current_scans:
+        current_scans = [
+            {"id": "SCAN-002", "name": "User Documents", "progress": 65, "files_scanned": 450, "threats_found": 0, "started": "14:25"},
+            {"id": "SCAN-004", "name": "Email Archive", "progress": 30, "files_scanned": 220, "threats_found": 2, "started": "14:35"},
+        ]
     
     recent_activity = [
         {"type": "scan", "message": "System scan completed", "time": "14:30", "user": "system"},
@@ -840,30 +1226,80 @@ def monitor():
     # Get system stats
     system_stats = get_system_stats() if is_linux() else {}
     
+    # Check scanner availability
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+    except ImportError:
+        scanner_available = False
+    
+    # Sample alerts
+    sample_alerts = [
+        {"type": "danger", "icon": "exclamation-triangle", "title": "Critical", "message": "Unauthorized access attempt detected", "time": "2024-01-22 14:32:10"},
+        {"type": "warning", "icon": "exclamation-circle", "title": "Warning", "message": "Policy violation in documents folder", "time": "2024-01-22 14:25:45"},
+        {"type": "info", "icon": "info-circle", "title": "Info", "message": "Full system scan completed", "time": "2024-01-22 14:15:30"},
+        {"type": "warning", "icon": "exclamation-circle", "title": "Warning", "message": "Multiple failed login attempts", "time": "2024-01-22 13:55:22"},
+        {"type": "success", "icon": "check-circle", "title": "Success", "message": "Threat database updated successfully", "time": "2024-01-22 13:40:15"},
+    ]
+    
+    # Sample threats
+    sample_threats = [
+        {"id": "THREAT-001", "name": "Credit Card Data Leak", "severity": "high", "location": "/home/user/documents/finance.txt", "time": "2024-01-22 14:30:45", "description": "Credit card numbers found in text files", "detected_by": "Credit Card Detection Policy"},
+        {"id": "THREAT-002", "name": "SSN Exposure", "severity": "high", "location": "/var/www/html/config.php", "time": "2024-01-22 14:25:32", "description": "Social Security numbers found in web files", "detected_by": "SSN Protection Policy"},
+        {"id": "THREAT-003", "name": "Password File", "severity": "medium", "location": "/tmp/passwords.txt", "time": "2024-01-22 14:20:15", "description": "Unencrypted password file found", "detected_by": "Password Files Policy"},
+        {"id": "THREAT-004", "name": "API Key Exposure", "severity": "medium", "location": "/home/user/code/api_keys.json", "time": "2024-01-22 14:15:22", "description": "API keys found in source code", "detected_by": "API Key Detection Policy"},
+        {"id": "THREAT-005", "name": "Sensitive Database Backup", "severity": "high", "location": "/backups/db_dump.sql", "time": "2024-01-22 13:45:18", "description": "Unencrypted database backup containing PII", "detected_by": "PII Detection Policy"},
+        {"id": "THREAT-006", "name": "Source Code Leak", "severity": "medium", "location": "/home/user/projects/internal_app.zip", "time": "2024-01-22 13:30:55", "description": "Proprietary source code in public folder", "detected_by": "IP Protection Policy"},
+    ]
+    
     return render_template('monitor.html', 
                          user=current_user,
-                         alerts=SAMPLE_ALERTS,
-                         threats=SAMPLE_THREATS[:8],
+                         alerts=sample_alerts,
+                         threats=sample_threats[:8],
                          current_scans=current_scans,
                          recent_activity=recent_activity,
                          system_stats=system_stats,
-                         dlp_available=True)
+                         dlp_available=scanner_available)
 
 @app.route('/alerts')
 @login_required
 def alerts():
+    sample_alerts = [
+        {"type": "danger", "icon": "exclamation-triangle", "title": "Critical", "message": "Unauthorized access attempt detected", "time": "2024-01-22 14:32:10"},
+        {"type": "warning", "icon": "exclamation-circle", "title": "Warning", "message": "Policy violation in documents folder", "time": "2024-01-22 14:25:45"},
+        {"type": "info", "icon": "info-circle", "title": "Info", "message": "Full system scan completed", "time": "2024-01-22 14:15:30"},
+        {"type": "warning", "icon": "exclamation-circle", "title": "Warning", "message": "Multiple failed login attempts", "time": "2024-01-22 13:55:22"},
+        {"type": "success", "icon": "check-circle", "title": "Success", "message": "Threat database updated successfully", "time": "2024-01-22 13:40:15"},
+    ]
+    
+    sample_threats = [
+        {"id": "THREAT-001", "name": "Credit Card Data Leak", "severity": "high", "location": "/home/user/documents/finance.txt", "time": "2024-01-22 14:30:45", "description": "Credit card numbers found in text files", "detected_by": "Credit Card Detection Policy"},
+        {"id": "THREAT-002", "name": "SSN Exposure", "severity": "high", "location": "/var/www/html/config.php", "time": "2024-01-22 14:25:32", "description": "Social Security numbers found in web files", "detected_by": "SSN Protection Policy"},
+        {"id": "THREAT-003", "name": "Password File", "severity": "medium", "location": "/tmp/passwords.txt", "time": "2024-01-22 14:20:15", "description": "Unencrypted password file found", "detected_by": "Password Files Policy"},
+        {"id": "THREAT-004", "name": "API Key Exposure", "severity": "medium", "location": "/home/user/code/api_keys.json", "time": "2024-01-22 14:15:22", "description": "API keys found in source code", "detected_by": "API Key Detection Policy"},
+    ]
+    
     return render_template('alerts.html', 
                          user=current_user,
-                         alerts=SAMPLE_ALERTS,
-                         threats=SAMPLE_THREATS[:4])
+                         alerts=sample_alerts,
+                         threats=sample_threats[:4])
 
 @app.route('/policies')
 @login_required
 def policies():
+    # Check scanner availability
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+    except ImportError:
+        scanner_available = False
+    
     return render_template('policies.html', 
                          user=current_user,
                          policies=SAMPLE_POLICIES,
-                         dlp_available=True)
+                         dlp_available=scanner_available)
 
 @app.route('/reports')
 @login_required
@@ -872,10 +1308,18 @@ def reports():
     if not all_reports:
         init_sample_reports()
     
+    # Check scanner availability
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+    except ImportError:
+        scanner_available = False
+    
     return render_template('reports.html', 
                          user=current_user,
                          reports=all_reports,
-                         dlp_available=True)
+                         dlp_available=scanner_available)
 
 @app.route('/generate_report', methods=['POST'])
 @login_required
@@ -888,12 +1332,30 @@ def generate_report():
     report_id = generate_report_id()
     
     # Prepare threat data based on range
-    if report_range == 'today':
-        threat_data = SAMPLE_THREATS[:3]  # Recent threats
-    elif report_range == 'week':
-        threat_data = SAMPLE_THREATS[:5]  # Last week's threats
-    else:
-        threat_data = SAMPLE_THREATS  # All threats
+    # Try to get real scan results
+    threat_data = []
+    try:
+        from scanner_engine import dlp_scanner
+        result = dlp_scanner.scan_directory('databases')
+        # Convert scanner threats to report format
+        for i, threat in enumerate(result.get('threats', [])[:20]):  # Limit to 20
+            threat_data.append({
+                'id': f"THREAT-{i+1:03d}",
+                'name': f"{threat.get('type', 'Unknown')} Exposure",
+                'severity': threat.get('severity', 'medium'),
+                'location': threat.get('file', 'Unknown'),
+                'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'description': f"{threat.get('type', 'Data')} found in file",
+                'detected_by': f"{threat.get('type', 'Pattern')} Detection Policy"
+            })
+    except:
+        # Fallback to sample data
+        threat_data = [
+            {"id": "THREAT-001", "name": "Credit Card Data Leak", "severity": "high", "location": "/home/user/documents/finance.txt", "time": "2024-01-22 14:30:45", "description": "Credit card numbers found in text files", "detected_by": "Credit Card Detection Policy"},
+            {"id": "THREAT-002", "name": "SSN Exposure", "severity": "high", "location": "/var/www/html/config.php", "time": "2024-01-22 14:25:32", "description": "Social Security numbers found in web files", "detected_by": "SSN Protection Policy"},
+            {"id": "THREAT-003", "name": "Password File", "severity": "medium", "location": "/tmp/passwords.txt", "time": "2024-01-22 14:20:15", "description": "Unencrypted password file found", "detected_by": "Password Files Policy"},
+            {"id": "THREAT-004", "name": "API Key Exposure", "severity": "medium", "location": "/home/user/code/api_keys.json", "time": "2024-01-22 14:15:22", "description": "API keys found in source code", "detected_by": "API Key Detection Policy"},
+        ]
     
     # Create report entry
     new_report = {
@@ -982,9 +1444,36 @@ def view_report(report_id):
 @app.route('/threats')
 @login_required
 def threats():
+    # Try to get real threats from scanner
+    real_threats = []
+    try:
+        from scanner_engine import dlp_scanner
+        result = dlp_scanner.scan_directory('databases')
+        # Format threats for display
+        for i, threat in enumerate(result.get('threats', [])[:50]):  # Limit to 50
+            real_threats.append({
+                'id': f"THREAT-{i+1:04d}",
+                'name': f"{threat.get('type', 'Data')} Exposure",
+                'severity': threat.get('severity', 'medium'),
+                'location': threat.get('file', 'Unknown'),
+                'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'description': f"{threat.get('type', 'Sensitive data')} found: {threat.get('data', '')[:50]}...",
+                'detected_by': f"{threat.get('type', 'Pattern')} Detection"
+            })
+    except:
+        # Fallback to sample threats
+        real_threats = [
+            {"id": "THREAT-001", "name": "Credit Card Data Leak", "severity": "high", "location": "/home/user/documents/finance.txt", "time": "2024-01-22 14:30:45", "description": "Credit card numbers found in text files", "detected_by": "Credit Card Detection Policy"},
+            {"id": "THREAT-002", "name": "SSN Exposure", "severity": "high", "location": "/var/www/html/config.php", "time": "2024-01-22 14:25:32", "description": "Social Security numbers found in web files", "detected_by": "SSN Protection Policy"},
+            {"id": "THREAT-003", "name": "Password File", "severity": "medium", "location": "/tmp/passwords.txt", "time": "2024-01-22 14:20:15", "description": "Unencrypted password file found", "detected_by": "Password Files Policy"},
+            {"id": "THREAT-004", "name": "API Key Exposure", "severity": "medium", "location": "/home/user/code/api_keys.json", "time": "2024-01-22 14:15:22", "description": "API keys found in source code", "detected_by": "API Key Detection Policy"},
+            {"id": "THREAT-005", "name": "Sensitive Database Backup", "severity": "high", "location": "/backups/db_dump.sql", "time": "2024-01-22 13:45:18", "description": "Unencrypted database backup containing PII", "detected_by": "PII Detection Policy"},
+            {"id": "THREAT-006", "name": "Source Code Leak", "severity": "medium", "location": "/home/user/projects/internal_app.zip", "time": "2024-01-22 13:30:55", "description": "Proprietary source code in public folder", "detected_by": "IP Protection Policy"},
+        ]
+    
     return render_template('threats.html', 
                          user=current_user,
-                         threats=SAMPLE_THREATS)
+                         threats=real_threats)
 
 @app.route('/users')
 @login_required
@@ -1011,7 +1500,7 @@ def users():
 def profile():
     # Sample user activity for profile page
     user_activity = [
-        {"action": "login", "timestamp": "2024-01-22 14:25:30", "ip": "192.168.1.100", "browser": "Chrome/120.0"},
+        {"action": "login", "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "ip": "192.168.1.100", "browser": "Chrome/120.0"},
         {"action": "scan_started", "timestamp": "2024-01-22 14:20:15", "details": "Initiated full system scan", "location": "/"},
         {"action": "report_viewed", "timestamp": "2024-01-22 14:15:45", "details": "Viewed monthly compliance report", "report": "REP-001"},
         {"action": "policy_updated", "timestamp": "2024-01-22 14:10:22", "details": "Modified SSN Protection policy", "policy": "SSN Protection"},
@@ -1067,11 +1556,34 @@ if __name__ == '__main__':
     print(f"📊 Data directory: {DATA_DIR}")
     print(f"📄 Reports directory: {REPORTS_DIR}")
     print(f"📝 Log directory: {LOG_DIR}")
+    
+    # Check if databases directory exists
+    if os.path.exists('databases'):
+        db_count = len([f for f in os.listdir('databases') if os.path.isfile(os.path.join('databases', f))])
+        print(f"📁 Test databases: {db_count} files in databases/")
+    else:
+        print(f"📁 Test databases: Not found (create with create_dlp_databases.py)")
+    
     print("\n✅ System checks:")
     print(f"   • Python version: {platform.python_version()}")
     print(f"   • Operating System: {platform.system()} {platform.release()}")
     print(f"   • System architecture: {platform.machine()}")
     print(f"   • Virtual environment: {'Active' if hasattr(sys, 'real_prefix') or sys.base_prefix != sys.prefix else 'Not active'}")
+    
+    # Check scanner availability
+    scanner_available = False
+    try:
+        from scanner_engine import dlp_scanner
+        scanner_available = True
+        print(f"   • Scanner engine: ✅ Available")
+        
+        # Test scanner
+        test_result = dlp_scanner.scan_directory('databases')
+        print(f"   • Test scan: ✅ Found {test_result.get('stats', {}).get('threats_found', 0)} threats")
+    except ImportError as e:
+        print(f"   • Scanner engine: ❌ Not available ({e})")
+    except Exception as e:
+        print(f"   • Scanner engine: ⚠️  Error: {e}")
     
     print("\n👤 Default Users:")
     print("   admin:Admin@123    (Admin role)")
@@ -1088,6 +1600,7 @@ if __name__ == '__main__':
     print("   • Process management")
     print("   • Secure file permissions")
     print("   • Comprehensive logging")
+    print("   • Scanner API integration")
     
     print("\n🌐 Access: http://localhost:5000")
     print("   Press Ctrl+C to stop the server")

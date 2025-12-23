@@ -1,0 +1,25 @@
+# Mark test databases as generated test data
+databases/** linguist-generated=true
+databases/** -text
+databases/** binary
+
+# Mark scanner test files
+test_*.txt linguist-generated=true
+test_*.csv linguist-generated=true
+test_*.xlsx binary
+test_*.sql linguist-generated=true
+
+# Mark configuration test files
+*.env.test linguist-generated=true
+*_credentials.txt linguist-generated=true
+
+# Mark output files
+scan_results_*.json linguist-generated=true
+*.log linguist-generated=true
+
+# Python files for DLP scanner
+scanner_engine.py -text
+create_dlp_databases.py -text
+
+# Security disclaimer
+SECURITY.md linguist-vendored

@@ -16,6 +16,8 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -23,30 +25,121 @@ MANIFEST
 
 # Virtual Environment
 .venv/
-venv/
 env/
+venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.settings/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# DLP System specific
-data/
-reports/
-logs/
-*.log
-*.db
-*.sqlite3
-
-# Temporary files
-*.tmp
+# Backups
+*.backup
+*.bak
+*.old
+*.orig
 *.temp
+*.save
+
+# DLP System Specific
+# Don't commit user data
+data/users.json
+data/config.json
+data/*.db
+
+# Don't commit generated reports
+reports/*.pdf
+reports/*.csv
+reports/*.html
+reports/*.xlsx
+
+# Don't commit log files
+logs/*.log
+*.log
+log.txt
+
+# Don't commit scan results
+scan_results_*.json
+*.scan.json
+
+# Don't commit test files with sensitive data
+test_*.txt
+test_*.csv
+test_*.xlsx
+test_*.sql
+
+# Temporary files from scanner
+temp_scan_*.json
+scan_cache_*.json
+
+# Uploads and downloads
+uploads/
+downloads/
+exports/
+
+# Test files (but keep test scripts)
+!test_*.py
+*.test
+*.spec
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+.coverage
+htmlcov/
+.coverage.*
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Temporary
+temp/
+tmp/
+/tmp
+
+# Database files (but not the databases/ directory which has test data)
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
