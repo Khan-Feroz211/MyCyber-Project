@@ -240,7 +240,7 @@ DB_SSL=true
 # API Keys and Secrets
 STRIPE_SECRET_KEY=sk_test_FAKESTRIPEKEY1234567890abc
 STRIPE_PUBLISHABLE_KEY=pk_live_1234567890abcdef
-AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_ACCESS_KEY_ID=AKIAFAKEAWSKEY1234567
 AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 GOOGLE_API_KEY=AIzaSyD-1234567890abcdefghijklmnopqrstuvwxyz
 GITHUB_TOKEN=ghp_16C7e42F292c6912E7710c838347Ae178B4a
@@ -287,7 +287,7 @@ PRODUCTION DATABASES:
    Database: app_production
    Username: db_admin_prod
    Password: MySqlProdPass123!
-   Connection String: mysql://db_admin_prod:MySqlProdPass123!@mysql-prod-01.company.com:3306/app_production
+   Connection String: mysql://testuser:testpass@mysql-prod-01.company.com:3306/app_production
 
 2. PostgreSQL Backup
    Host: pg-backup-01.company.com
@@ -397,7 +397,7 @@ INSERT INTO transactions (id, user_id, amount, card_last4, status, created_at) V
 -- API Keys Table (Contains Secrets)
 INSERT INTO api_keys (id, service, key_value, created_by) VALUES
 (1, 'Stripe', 'sk_test_FAKESTRIPEKEY1234567890abc', 'jsmith'),
-(2, 'AWS', 'AKIAIOSFODNN7EXAMPLE', 'jdoe'),
+(2, 'AWS', 'AKIAFAKEAWSKEY1234567', 'jdoe'),
 (3, 'SendGrid', 'SG.1234567890abcdef.9876543210', 'bwilson'),
 (4, 'Twilio', 'AC1234567890abcdef9876543210', 'sjohnson');
 
