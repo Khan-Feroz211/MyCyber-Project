@@ -1,0 +1,6 @@
+Transaction_ID,Customer_Name,Credit_Card_Number,Amount,Date,Merchant,Status
+TXN1001,John Smith,4532-1488-0343-6467,149.99,2024-01-15,Amazon,Completed
+TXN1002,Jane Doe,4916-3385-2812-0006,299.50,2024-01-16,Best Buy,Completed
+TXN1003,Robert Johnson,4485-9753-0912-3456,75.25,2024-01-17,Starbucks,Failed
+TXN1004,Mary Williams,5111-1111-1111-1118,450.00,2024-01-18,Apple,Pending
+TXN1005,James Brown,3782-822463-10005,89.99,2024-01-19,Walmart,Completed
