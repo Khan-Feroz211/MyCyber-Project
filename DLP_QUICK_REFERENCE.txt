@@ -1,0 +1,51 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                    DLP SYSTEM - QUICK REFERENCE CARD                 ║
+╠══════════════════════════════════════════════════════════════════════╣
+║                                                                      ║
+║  🔧 SETUP:                                                           ║
+║     pip install -r requirements.txt                                  ║
+║     python3 create_dlp_databases.py                                  ║
+║                                                                      ║
+║  🚀 START:                                                           ║
+║     python3 run_dlp_system.py   [Choose option 2 or 4]               ║
+║     OR python3 app.py           [Web only]                           ║
+║                                                                      ║
+║  🌐 ACCESS:                                                          ║
+║     http://localhost:5000                                            ║
+║                                                                      ║
+║  👤 LOGINS:                                                          ║
+║     admin / Admin@123     [Full control]                             ║
+║     user / User@123       [Basic scanning]                           ║
+║     auditor / Auditor@123 [Reports & monitoring]                     ║
+║                                                                      ║
+║  📁 TEST DATA:                                                       ║
+║     databases/ directory - 11 test files with fake patterns          ║
+║                                                                      ║
+║  🔍 QUICK TEST:                                                      ║
+║     python3 scanner_engine.py      [Should find 1968+ threats]       ║
+║                                                                      ║
+║  ⚠️  SECURITY NOTE:                                                  ║
+║     EDUCATIONAL USE ONLY • TEST DATA ONLY • NOT FOR PRODUCTION       ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+KEY PAGES:
+  /dashboard      - System overview
+  /scanner        - Manual scanning
+  /monitor        - Real-time monitoring
+  /reports        - Generate reports
+  /threats        - View detected threats
+  /users          - User management (Admin only)
+  /profile        - Your profile settings
+
+COMMON COMMANDS:
+  • Start monitor:    python3 real_time_monitor.py
+  • Test scanner:     python3 scanner_engine.py
+  • Quick scan:       curl -X POST http://localhost:5000/api/quick_scan
+  • Test file:        echo "SSN: XXX-XX-1234" > test.txt
+
+TROUBLESHOOTING:
+  • Port in use?      Change port in app.py
+  • Import errors?    pip install -r requirements.txt
+  • No threats?       Run create_dlp_databases.py
+  • Monitor issues?   pip install watchdog
