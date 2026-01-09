@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "Credit Card Detection",
+    "description": "Detect credit card numbers in files",
+    "status": "active",
+    "type": "pattern",
+    "severity": "high",
+    "created": "2024-01-15",
+    "last_modified": "2024-01-20",
+    "rules": {
+      "patterns": [
+        "\\d{4}-\\d{4}-\\d{4}-\\d{4}",
+        "\\d{16}"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "name": "SSN Protection",
+    "description": "Detect Social Security numbers",
+    "status": "active",
+    "type": "pattern",
+    "severity": "high",
+    "created": "2024-01-10",
+    "last_modified": "2024-01-18",
+    "rules": {
+      "patterns": [
+        "\\d{3}-\\d{2}-\\d{4}"
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "name": "Password Files",
+    "description": "Detect password files",
+    "status": "draft",
+    "type": "file",
+    "severity": "medium",
+    "created": "2024-01-05",
+    "last_modified": "2024-01-12",
+    "rules": {
+      "extensions": [
+        ".pass",
+        ".pwd",
+        "password.txt"
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "name": "API Key Detection",
+    "description": "Detect exposed API keys",
+    "status": "active",
+    "type": "pattern",
+    "severity": "medium",
+    "created": "2024-01-08",
+    "last_modified": "2024-01-15",
+    "rules": {
+      "patterns": [
+        "[A-Z0-9]{20}",
+        "sk_live_[a-zA-Z0-9]{24}"
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "name": "PII Detection",
+    "description": "Detect Personally Identifiable Information",
+    "status": "active",
+    "type": "pattern",
+    "severity": "high",
+    "created": "2024-01-12",
+    "last_modified": "2024-01-19",
+    "rules": {
+      "patterns": [
+        "[A-Z][a-z]+ [A-Z][a-z]+",
+        "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+      ]
+    }
+  }
+]

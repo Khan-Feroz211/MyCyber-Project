@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2025-12-23T10:26:33.252868",
+    "file": "./databases/configs/sed6CngRe",
+    "event": "CREATED",
+    "threat_type": "EMAIL",
+    "threat_data": "testpass@mysql-prod-01.company.com",
+    "line": 14,
+    "severity": "low"
+  },
+  {
+    "timestamp": "2025-12-23T10:26:33.252868",
+    "file": "./databases/configs/sed6CngRe",
+    "event": "CREATED",
+    "threat_type": "DATABASE_URL",
+    "threat_data": "mysql://testuser:testpass@mysql-prod-01.company.com:3306/app_production",
+    "line": 14,
+    "severity": "high"
+  },
+  {
+    "timestamp": "2025-12-23T10:26:33.252868",
+    "file": "./databases/configs/sed6CngRe",
+    "event": "CREATED",
+    "threat_type": "EMAIL",
+    "threat_data": "Secure456@pg-backup-01.company.com",
+    "line": 22,
+    "severity": "low"
+  },
+  {
+    "timestamp": "2025-12-23T10:26:33.252868",
+    "file": "./databases/configs/sed6CngRe",
+    "event": "CREATED",
+    "threat_type": "DATABASE_URL",
+    "threat_data": "mongodb://mongo_user:MongoPass789!@mongodb-cluser.company.com:27017/analytics_db",
+    "line": 30,
+    "severity": "high"
+  }
+]
