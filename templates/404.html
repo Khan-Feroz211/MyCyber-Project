@@ -26,7 +26,7 @@
                         <i class="bi bi-house-door"></i> {{ 'Back to Dashboard' if user else 'Go to Login' }}
                     </a>
                     {% if user %}
-                    <a href="{{ url_for('scanner') }}" class="btn btn-success btn-lg ms-2">
+                    <a href="{{ url_for('scan_page') }}" class="btn btn-success btn-lg ms-2">
                         <i class="bi bi-search"></i> Go to Scanner
                     </a>
                     {% endif %}
