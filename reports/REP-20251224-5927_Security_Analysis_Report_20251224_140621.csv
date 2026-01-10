@@ -1,0 +1,21 @@
+ID,Name,Severity,Location,Time,Description,Detected By
+THREAT-001,SSN Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,SSN found in file,SSN Detection Policy
+THREAT-002,CREDIT_CARD Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,CREDIT_CARD found in file,CREDIT_CARD Detection Policy
+THREAT-003,CREDIT_CARD Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,CREDIT_CARD found in file,CREDIT_CARD Detection Policy
+THREAT-004,EMAIL Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,EMAIL found in file,EMAIL Detection Policy
+THREAT-005,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-006,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-007,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-008,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-009,BANK_ACCOUNT Exposure,medium,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,BANK_ACCOUNT found in file,BANK_ACCOUNT Detection Policy
+THREAT-010,SSN Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,SSN found in file,SSN Detection Policy
+THREAT-011,CREDIT_CARD Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,CREDIT_CARD found in file,CREDIT_CARD Detection Policy
+THREAT-012,CREDIT_CARD Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,CREDIT_CARD found in file,CREDIT_CARD Detection Policy
+THREAT-013,EMAIL Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,EMAIL found in file,EMAIL Detection Policy
+THREAT-014,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-015,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-016,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-017,PHONE Exposure,low,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,PHONE found in file,PHONE Detection Policy
+THREAT-018,BANK_ACCOUNT Exposure,medium,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,BANK_ACCOUNT found in file,BANK_ACCOUNT Detection Policy
+THREAT-019,SSN Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,SSN found in file,SSN Detection Policy
+THREAT-020,CREDIT_CARD Exposure,high,databases/excel/Employee_Master_Database.xlsx,2025-12-24 14:06:16,CREDIT_CARD found in file,CREDIT_CARD Detection Policy

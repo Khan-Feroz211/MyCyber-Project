@@ -1,47 +1,19 @@
-# Core
-Flask>=2.3.0
-Flask-Login>=0.6.0
-Flask-WTF>=1.0.0
-Werkzeug>=2.3.0
+# Basic requirements for the Project Assistant Bot
 
-# Data processing
-numpy>=1.24.0
-pandas>=2.0.0
-scikit-learn>=1.2.0
-joblib>=1.2.0
+# GUI framework (comes with Python)
+# tkinter is built-in, no need to install
 
-# Security
-cryptography>=40.0.0
-bcrypt>=4.0.0
-pyjwt>=2.7.0
+# Optional: For enhanced AI responses (requires API key)
+# anthropic>=0.18.0
 
-# System monitoring
-psutil>=5.9.0
+# For date/time handling (built-in)
+# datetime
 
-# Web and networking
-requests>=2.30.0
-beautifulsoup4>=4.12.0
-python-dateutil>=2.8.0
+# For JSON data storage (built-in)
+# json
 
-# File processing
-python-magic>=0.4.27
-watchdog>=3.0.0
+# All required libraries are part of Python's standard library!
+# No additional installations needed for basic functionality.
 
-# Configuration
-PyYAML>=6.0
-python-dotenv>=1.0.0
-
-# Database
-SQLAlchemy>=2.0.0
-alembic>=1.11.0
-
-# Logging
-structlog>=23.1.0
-
-# Testing
-pytest>=7.3.0
-pytest-cov>=4.0.0
-
-# Development
-black>=23.3.0
-flake8>=6.0.0
+# If you want to add AI-powered responses in the future:
+# pip install anthropic

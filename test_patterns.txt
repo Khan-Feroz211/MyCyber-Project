@@ -1,0 +1,28 @@
+# Test patterns for DLP scanner - SYNTHETIC DATA ONLY
+
+## Social Security Number patterns
+SSN_TEST_1: XXX-XX-1234
+SSN_TEST_2: 123-45-6789  # Example pattern only
+
+## Credit Card patterns  
+CC_TEST_1: XXXX-XXXX-XXXX-1234
+CC_TEST_2: 4111-1111-1111-1111  # Test Visa pattern
+
+## Email patterns
+EMAIL_TEST: test@example.test
+EMAIL_TEST_2: user@testdomain.test
+
+## Phone patterns
+PHONE_TEST: (555) 123-4567
+PHONE_TEST_2: 555-123-4567
+
+## API Key patterns (fake)
+API_TEST: sk_test_1234567890abcdef
+API_TEST_2: AKIAFAKEAWSKEY1234567
+
+## Database URL patterns (fake)
+DB_TEST: postgres://testuser:testpass@localhost:5432/testdb
+DB_TEST_2: mysql://testuser:testpass@localhost/test
+
+# ALL DATA ABOVE IS SYNTHETIC/TEST DATA ONLY
+# NO REAL SENSITIVE INFORMATION IS INCLUDED

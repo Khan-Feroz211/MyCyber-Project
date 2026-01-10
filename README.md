@@ -1,103 +1,86 @@
 # 🛡️ CyberShield DLP Security System
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue)
-![Flask](https://img.shields.io/badge/Flask-2.0+-green)
-![Version](https://img.shields.io/badge/Version-Basic%20(Non--AI)-yellow)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+<div align="center">
 
-## 📋 Overview
-A comprehensive **Data Loss Prevention (DLP)** security platform built with Flask. This is the **basic version** focusing on rule-based security without AI/ML configurations.
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Status](https://img.shields.io/badge/Status-Active-success.svg)
 
-## ⚡ Quick Start
+**Enterprise-grade Data Loss Prevention platform for comprehensive data protection**
 
-### Installation
-```bash
-# Clone repository
-git clone https://github.com/Khan-Feroz211/CyberShield-DLP-Security.git
-cd CyberShield-DLP-Security
+</div>
 
-# Install dependencies
+## 📋 Project Description
+
+CyberShield DLP Security System is a comprehensive Data Loss Prevention (DLP) platform designed to protect sensitive organizational data from unauthorized access, leakage, and security breaches. This enterprise-grade solution provides real-time monitoring, intelligent threat detection, policy-based data protection, and detailed compliance reporting.
+
+### What Makes CyberShield Special?
+
+- **Real-Time Protection**: Continuous monitoring and scanning of data flows across the organization
+- **Intelligent Detection**: Advanced pattern recognition for credit cards, SSNs, API keys, and custom sensitive data
+- **Policy Engine**: Flexible rule-based system for data governance and compliance
+- **Comprehensive Reporting**: Detailed analytics and reports for security and compliance teams
+- **CPU-Optimized**: Efficient resource usage suitable for production environments
+- **Role-Based Access**: Granular permission management for different user roles
+
+## ⚡ Key Features
+
+- 🔐 **Data Loss Prevention**: Real-time monitoring and policy enforcement
+- 🔍 **Content Inspection**: Deep scanning of files and network traffic
+- 👥 **User Management**: RBAC with admin, manager, and user roles
+- 📊 **Live Dashboard**: Real-time security event visualization
+- 🚨 **Threat Detection**: Pattern-based detection of sensitive data exposure
+- 📈 **Reporting**: PDF, CSV, JSON export capabilities
+- 🔒 **Audit Logging**: Complete activity tracking for compliance
+- ⚡ **Performance**: Optimized for low CPU usage in production
+
+## 🚀 Quick Start
+
+\`\`\`bash
+# Clone and setup
+git clone https://github.com/Khan-Feroz211/MyCyber-Project.git
+cd MyCyber-Project
+
+# Install and run
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-
-# Run application
 python app.py
-```
+\`\`\`
 
-### Access Application
-- **URL:** http://localhost:5001
-- **Default Credentials:**
-  - Admin: `admin` / `admin123`
-  - Manager: `manager` / `manager123`
-  - User: `user` / `user123`
+**Access**: http://localhost:5001
 
-*⚠️ Change default passwords after first login!*
+**Default Credentials**: 
+- Admin: `admin` / `admin123`
+- Manager: `manager` / `manager123`  
+- User: `user` / `user123`
+
+⚠️ Change passwords after first login!
+
+## 📁 Key Components
+
+- `app.py` - Main Flask application (10,000+ lines)
+- `scanner_engine.py` - Content scanning engine
+- `real_time_monitor.py` - Real-time monitoring system
+- `linux_system_monitor.py` - System resource monitoring
+- `create_dlp_databases.py` - Database setup
 
 ## 👥 Development Team
-- **Sayyad Ali Naqi Naqvi** - Backend & Security
-- **Hasnain Ali** - Frontend & UI/UX
-- **Hassan Nasser** - Security Testing
-- **Feroz-U-Din** - System Architecture
 
-**📧 Contact:** www.ferozkhan@outlook.com  
-**📅 Project Date:** December 2025
+- **Feroz-U-Din Khan** - System Architecture & Lead Developer
+- **Sayyad Ali Naqi Naqvi** - Backend Development & Security
+- **Hasnain Ali** - Frontend Development & UI/UX
+- **Hassan Nasser** - Security Testing & QA
 
-## 🎯 Features
-- Real-time data monitoring & scanning
-- Policy-based protection system
-- Threat detection & alerting
-- User access control (RBAC)
-- Session management
-- Automated report generation
-- Multiple export formats (PDF, CSV, JSON, TXT)
+📧 Contact: www.ferozkhan@outlook.com
 
-## 🏗️ Project Structure
-```
-CyberShield-DLP-Security/
-├── app.py              # Main Flask application
-├── requirements.txt    # Dependencies
-├── README.md          # Documentation
-├── run.sh             # Startup script
-├── data/              # JSON data files
-├── templates/         # HTML templates
-└── static/           # CSS, JS, images
-```
+## 📄 License
 
-## 🔧 Technology Stack
-- **Backend:** Python Flask
-- **Frontend:** HTML5, CSS3, JavaScript
-- **Database:** JSON files
-- **Security:** RBAC, Input validation, Session management
+MIT License - See [LICENSE](LICENSE) file
 
-## 📞 Support
-Email: www.ferozkhan@outlook.com
+## 🌟 Star this project if you find it useful!
 
 ---
-**⭐ If you find this project useful, please star the repository!**
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
-- Web browser
-
-### Installation Steps
-1. Clone the repository
-2. Create virtual environment
-3. Install dependencies
-4. Run the application
-5. Access at http://localhost:5001
-
-### Default Users
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | admin | admin123 |
-| Manager | manager | manager123 |
-| User | user | user123 |
-
-## 📁 Project Structure
-- `app.py` - Main application file
-- `templates/` - HTML templates
-- `static/` - CSS, JavaScript, images
-- `data/` - JSON data files
-- `requirements.txt` - Python dependencies
+For detailed documentation, see [COMPLETE_DOCUMENTATION.md](COMPLETE_DOCUMENTATION.md)
