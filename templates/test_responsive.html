@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsiveness Tester - DLP System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+            padding: 20px;
+        }
+
+        .tester-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .tester-header h1 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .device-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .device-btn {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .device-btn:hover {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .device-btn.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-color: #4facfe;
+        }
+
+        .device-btn i {
+            font-size: 1.5rem;
+        }
+
+        .device-size {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .iframe-container {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 0 auto;
+            transition: all 0.5s ease;
+        }
+
+        .device-frame {
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .device-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 3px solid rgba(79, 172, 254, 0.3);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .info-panel {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 10px;
+        }
+
+        .info-panel span {
+            display: inline-block;
+            margin: 0 15px;
+            padding: 8px 15px;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 8px;
+        }
+
+        .custom-size {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .custom-input {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            width: 120px;
+            text-align: center;
+        }
+
+        .custom-input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .apply-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            color: white;
+            padding: 10px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .url-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .url-btn {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .url-btn:hover {
+            border-color: #4facfe;
+        }
+
+        .url-btn.active {
+            background: rgba(79, 172, 254, 0.3);
+            border-color: #4facfe;
+        }
+
+        @media (max-width: 768px) {
+            .device-selector {
+                gap: 10px;
+            }
+
+            .device-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .iframe-container {
+                padding: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="tester-header">
+        <h1>📱 Responsiveness Tester</h1>
+        <p style="color: rgba(255,255,255,0.6);">Test your DLP system across different devices</p>
+    </div>
+
+    <!-- URL Selector -->
+    <div class="url-selector">
+        <button class="url-btn active" onclick="loadPage('/login')">Login</button>
+        <button class="url-btn" onclick="loadPage('/register')">Register</button>
+        <button class="url-btn" onclick="loadPage('/dashboard')">Dashboard</button>
+        <button class="url-btn" onclick="loadPage('/')">Home</button>
+    </div>
+
+    <!-- Device Selector -->
+    <div class="device-selector">
+        <button class="device-btn active" onclick="setDevice('mobile', 375, 667)">
+            <i class="fas fa-mobile-alt"></i>
+            <span>iPhone SE</span>
+            <span class="device-size">375x667</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('mobile', 390, 844)">
+            <i class="fas fa-mobile-alt"></i>
+            <span>iPhone 12</span>
+            <span class="device-size">390x844</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('mobile', 414, 896)">
+            <i class="fas fa-mobile-alt"></i>
+            <span>iPhone Pro Max</span>
+            <span class="device-size">414x896</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('tablet', 768, 1024)">
+            <i class="fas fa-tablet-alt"></i>
+            <span>iPad</span>
+            <span class="device-size">768x1024</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('tablet', 820, 1180)">
+            <i class="fas fa-tablet-alt"></i>
+            <span>iPad Air</span>
+            <span class="device-size">820x1180</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('desktop', 1024, 768)">
+            <i class="fas fa-laptop"></i>
+            <span>Laptop</span>
+            <span class="device-size">1024x768</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('desktop', 1440, 900)">
+            <i class="fas fa-desktop"></i>
+            <span>Desktop</span>
+            <span class="device-size">1440x900</span>
+        </button>
+        <button class="device-btn" onclick="setDevice('desktop', 1920, 1080)">
+            <i class="fas fa-tv"></i>
+            <span>Full HD</span>
+            <span class="device-size">1920x1080</span>
+        </button>
+    </div>
+
+    <!-- Custom Size Input -->
+    <div class="custom-size">
+        <input type="number" id="customWidth" class="custom-input" placeholder="Width" value="375">
+        <span style="color: rgba(255,255,255,0.6); display: flex; align-items: center;">×</span>
+        <input type="number" id="customHeight" class="custom-input" placeholder="Height" value="667">
+        <button class="apply-btn" onclick="applyCustomSize()">Apply Custom Size</button>
+    </div>
+
+    <!-- Device Frame -->
+    <div class="iframe-container">
+        <div class="device-frame" id="deviceFrame">
+            <iframe id="previewFrame" src="/login"></iframe>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel">
+        <span><strong>Current Size:</strong> <span id="currentWidth">375</span> × <span id="currentHeight">667</span></span>
+        <span><strong>Device:</strong> <span id="currentDevice">Mobile</span></span>
+        <span><strong>Page:</strong> <span id="currentPage">Login</span></span>
+    </div>
+
+    <script>
+        let currentUrl = '/login';
+
+        function setDevice(type, width, height) {
+            const frame = document.getElementById('deviceFrame');
+            const iframe = document.getElementById('previewFrame');
+            
+            // Update active button
+            document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.device-btn').classList.add('active');
+            
+            // Set frame size
+            frame.style.width = width + 'px';
+            frame.style.height = height + 'px';
+            
+            // Update info
+            document.getElementById('currentWidth').textContent = width;
+            document.getElementById('currentHeight').textContent = height;
+            document.getElementById('currentDevice').textContent = type.charAt(0).toUpperCase() + type.slice(1);
+            
+            // Update custom inputs
+            document.getElementById('customWidth').value = width;
+            document.getElementById('customHeight').value = height;
+        }
+
+        function applyCustomSize() {
+            const width = document.getElementById('customWidth').value;
+            const height = document.getElementById('customHeight').value;
+            
+            const frame = document.getElementById('deviceFrame');
+            frame.style.width = width + 'px';
+            frame.style.height = height + 'px';
+            
+            document.getElementById('currentWidth').textContent = width;
+            document.getElementById('currentHeight').textContent = height;
+            document.getElementById('currentDevice').textContent = 'Custom';
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        function loadPage(url) {
+            currentUrl = url;
+            document.getElementById('previewFrame').src = url;
+            
+            // Update active URL button
+            document.querySelectorAll('.url-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update info
+            const pageName = url === '/' ? 'Home' : url.substring(1).charAt(0).toUpperCase() + url.substring(2);
+            document.getElementById('currentPage').textContent = pageName;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // R key - Rotate (swap width/height)
+            if (e.key === 'r' || e.key === 'R') {
+                const width = document.getElementById('customWidth').value;
+                const height = document.getElementById('customHeight').value;
+                document.getElementById('customWidth').value = height;
+                document.getElementById('customHeight').value = width;
+                applyCustomSize();
+            }
+            
+            // F key - Full screen
+            if (e.key === 'f' || e.key === 'F') {
+                setDevice('desktop', 1920, 1080);
+            }
+        });
+
+        // Set initial device
+        setDevice('mobile', 375, 667);
+    </script>
+</body>
+</html>

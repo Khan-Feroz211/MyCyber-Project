@@ -3849,9 +3849,13 @@ db_engine = DatabaseEngine()
 def load_user(user_id):
     """Load user from database"""
     try:
-        with db_engine.get_session() as session:
-            user = session.query(User).filter_by(id=user_id).first()
-            return user
+        session = db_engine.get_session()
+        user = session.query(User).filter_by(id=user_id).first()
+        if user:
+            # Make the user object independent of the session
+            session.expunge(user)
+        session.close()
+        return user
     except Exception as e:
         logger.error(f"Failed to load user {user_id}: {e}")
         return None
@@ -4952,3 +4956,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+@app.route('/test-responsive')
+def test_responsive():
+    """Responsiveness testing page"""
+    return render_template('test_responsive.html')
