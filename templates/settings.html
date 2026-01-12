@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-cog"></i> System Settings</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="#profile" class="list-group-item list-group-item-action active" 
+                   data-bs-toggle="list">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="#security" class="list-group-item list-group-item-action" 
+                   data-bs-toggle="list">
+                    <i class="fas fa-shield-alt"></i> Security
+                </a>
+                <a href="#notifications" class="list-group-item list-group-item-action" 
+                   data-bs-toggle="list">
+                    <i class="fas fa-bell"></i> Notifications
+                </a>
+                <a href="#system" class="list-group-item list-group-item-action" 
+                   data-bs-toggle="list">
+                    <i class="fas fa-server"></i> System
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- Profile Tab -->
+                <div class="tab-pane fade show active" id="profile">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Profile Settings</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                <div class="form-group mb-3">
+                                    <label>Username</label>
+                                    <input type="text" class="form-control" 
+                                           value="{{ current_user.username }}" readonly>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label>Email</label>
+                                    <input type="email" class="form-control" 
+                                           value="{{ current_user.email }}" name="email">
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label>Role</label>
+                                    <input type="text" class="form-control" 
+                                           value="{{ current_user.role }}" readonly>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    Update Profile
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Security Tab -->
+                <div class="tab-pane fade" id="security">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Security Settings</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('change_password') }}">
+                                <div class="form-group mb-3">
+                                    <label>Current Password</label>
+                                    <input type="password" class="form-control" 
+                                           name="current_password" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label>New Password</label>
+                                    <input type="password" class="form-control" 
+                                           name="new_password" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label>Confirm New Password</label>
+                                    <input type="password" class="form-control" 
+                                           name="confirm_password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    Change Password
+                                </button>
+                            </form>
+                            
+                            <hr class="my-4">
+                            
+                            <h5>Two-Factor Authentication</h5>
+                            <p>Add an extra layer of security to your account.</p>
+                            <button class="btn btn-success">
+                                <i class="fas fa-mobile-alt"></i> Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notifications Tab -->
+                <div class="tab-pane fade" id="notifications">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Notification Preferences</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" 
+                                           id="email_threats" checked>
+                                    <label class="form-check-label" for="email_threats">
+                                        Email notifications for threats
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" 
+                                           id="email_scans" checked>
+                                    <label class="form-check-label" for="email_scans">
+                                        Email notifications for completed scans
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" 
+                                           id="email_reports">
+                                    <label class="form-check-label" for="email_reports">
+                                        Weekly email reports
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    Save Preferences
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- System Tab -->
+                <div class="tab-pane fade" id="system">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>System Configuration</h4>
+                        </div>
+                        <div class="card-body">
+                            <h5>System Information</h5>
+                            <table class="table">
+                                <tr>
+                                    <td><strong>Version:</strong></td>
+                                    <td>1.0.0</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Database:</strong></td>
+                                    <td>SQLite</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Python:</strong></td>
+                                    <td>3.12.3</td>
+                                </tr>
+                            </table>
+                            
+                            <hr>
+                            
+                            <h5>Danger Zone</h5>
+                            <p class="text-danger">
+                                Irreversible actions. Use with caution.
+                            </p>
+                            <button class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Clear All Logs
+                            </button>
+                            <button class="btn btn-danger">
+                                <i class="fas fa-sync"></i> Reset to Defaults
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

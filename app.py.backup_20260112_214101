@@ -42,12 +42,6 @@ import pwd
 import fcntl
 import struct
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-
-
-
 # Core Security & Cryptography
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes, hmac, serialization
@@ -3876,9 +3870,33 @@ def before_request():
     logger.info(f"Request {g.request_id}: {request.method} {request.path} - IP: {request.remote_addr}")
 
 @app.after_request
-def set_headers(response):
-    response.headers.pop('Content-Security-Policy', None)
-    response.headers.pop('Clear-Site-Data', None)
+def after_request(response):
+    """Execute after each request"""
+    # Calculate processing time
+    if hasattr(g, 'start_time'):
+        processing_time = (time.time() - g.start_time) * 1000
+        response.headers['X-Processing-Time'] = f'{processing_time:.2f}ms'
+        response.headers['X-Request-ID'] = g.request_id
+    
+    # Security headers
+    security_headers = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;",
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+        'X-Permitted-Cross-Domain-Policies': 'none',
+        'Clear-Site-Data': '"cache", "cookies", "storage"'
+    }
+    
+    for header, value in security_headers.items():
+        response.headers[header] = value
+    
+    # Log response
+    logger.info(f"Response {g.request_id}: {response.status_code} - {processing_time:.2f}ms")
+    
     return response
 
 @app.route('/')
@@ -4943,176 +4961,3 @@ if __name__ == '__main__':
 def test_responsive():
     """Responsiveness testing page"""
     return render_template('test_responsive.html')
-
-# ═══════════════════════════════════════════════════════════════
-# MISSING ROUTES - Quick Fix
-# ═══════════════════════════════════════════════════════════════
-
-@app.route('/scan/directory', methods=['POST'])
-@login_required
-def scan_directory():
-    """Scan directory"""
-    directory_path = request.form.get('directory_path', '')
-    flash(f'Directory scan started for: {directory_path}', 'info')
-    return redirect(url_for('scan_page'))
-
-@app.route('/scan/file', methods=['POST'])
-@login_required
-def scan_file():
-    """Scan file"""
-    if 'file' in request.files:
-        file = request.files['file']
-        flash(f'File scan started: {file.filename}', 'info')
-    return redirect(url_for('scan_page'))
-
-
-# ═══════════════════════════════════════════════════════════
-# ALL MISSING ROUTES - Complete Fix
-# ═══════════════════════════════════════════════════════════
-
-@app.route('/scan', methods=['GET'])
-@login_required
-def scan_page():
-    """Scan page"""
-    try:
-        return render_template('scan.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Scan page error: {e}")
-        flash('Error loading scan page', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/scan/directory', methods=['POST'])
-@login_required
-def scan_directory():
-    """Scan directory"""
-    try:
-        directory_path = request.form.get('directory_path', '')
-        flash(f'Directory scan started: {directory_path}', 'info')
-        return redirect(url_for('scan_page'))
-    except Exception as e:
-        logger.error(f"Directory scan error: {e}")
-        flash('Scan failed', 'danger')
-        return redirect(url_for('scan_page'))
-
-@app.route('/scan/file', methods=['POST'])
-@login_required
-def scan_file():
-    """Scan uploaded file"""
-    try:
-        if 'file' in request.files:
-            file = request.files['file']
-            flash(f'File scan started: {file.filename}', 'info')
-        return redirect(url_for('scan_page'))
-    except Exception as e:
-        logger.error(f"File scan error: {e}")
-        flash('Scan failed', 'danger')
-        return redirect(url_for('scan_page'))
-
-@app.route('/scan/results')
-@app.route('/scan/results/<scan_id>')
-@login_required
-def scan_results(scan_id='latest'):
-    """View scan results"""
-    try:
-        return render_template('scan_results.html', scan_id=scan_id, user=current_user)
-    except Exception as e:
-        logger.error(f"Scan results error: {e}")
-        flash('Error loading results', 'danger')
-        return redirect(url_for('scan_page'))
-
-@app.route('/encrypt', methods=['GET', 'POST'])
-@login_required
-def encrypt_page():
-    """File encryption"""
-    try:
-        if request.method == 'POST':
-            flash('Encryption feature in development', 'info')
-            return redirect(url_for('encrypt_page'))
-        return render_template('encrypt.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Encrypt page error: {e}")
-        flash('Error loading encryption', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/decrypt', methods=['GET', 'POST'])
-@login_required
-def decrypt_page():
-    """File decryption"""
-    try:
-        if request.method == 'POST':
-            flash('Decryption feature in development', 'info')
-            return redirect(url_for('decrypt_page'))
-        return render_template('decrypt.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Decrypt page error: {e}")
-        flash('Error loading decryption', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/reports')
-@login_required
-def reports():
-    """Reports page"""
-    try:
-        return render_template('reports.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Reports page error: {e}")
-        flash('Error loading reports', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/users')
-@login_required
-def users():
-    """User management (admin only)"""
-    if current_user.role != 'admin':
-        flash('Admin access required', 'danger')
-        return redirect(url_for('dashboard'))
-    try:
-        return render_template('users.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Users page error: {e}")
-        flash('Error loading users', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/alerts')
-@login_required
-def alerts():
-    """Security alerts"""
-    try:
-        return render_template('alerts.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Alerts page error: {e}")
-        flash('Error loading alerts', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/settings')
-@login_required
-def settings():
-    """Settings page"""
-    try:
-        return render_template('settings.html', user=current_user)
-    except Exception as e:
-        logger.error(f"Settings page error: {e}")
-        flash('Error loading settings', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/settings/change-password', methods=['POST'])
-@login_required
-def change_password():
-    """Change password"""
-    try:
-        current_password = request.form.get('current_password')
-        new_password = request.form.get('new_password')
-        confirm_password = request.form.get('confirm_password')
-        
-        if new_password != confirm_password:
-            flash('Passwords do not match', 'danger')
-            return redirect(url_for('settings'))
-        
-        # TODO: Implement password change logic
-        flash('Password change feature coming soon', 'info')
-        return redirect(url_for('settings'))
-    except Exception as e:
-        logger.error(f"Password change error: {e}")
-        flash('Error changing password', 'danger')
-        return redirect(url_for('settings'))
-

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Scan Results{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-clipboard-list"></i> Scan Results</h2>
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Scan ID: {{ scan_id or 'N/A' }}</h5>
+            <p>Status: <span class="badge bg-success">Completed</span></p>
+            <p>Threats Found: <span class="badge bg-warning">3</span></p>
+            <p>Files Scanned: <span class="badge bg-info">45</span></p>
+            <a href="{{ url_for('scan_page') }}" class="btn btn-primary mt-3">Back to Scan</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

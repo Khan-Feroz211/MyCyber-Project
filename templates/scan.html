@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}File Scanning{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-search"></i> File & Directory Scanning</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-folder-open"></i> Scan Directory</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('scan_directory') }}">
+                        <div class="form-group mb-3">
+                            <label for="directory_path">Directory Path</label>
+                            <input type="text" class="form-control" id="directory_path" 
+                                   name="directory_path" placeholder="/path/to/directory" required>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="recursive" 
+                                   name="recursive" checked>
+                            <label class="form-check-label" for="recursive">
+                                Scan subdirectories
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-play"></i> Start Scan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="fas fa-file-upload"></i> Scan File</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('scan_file') }}" 
+                          enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label for="file">Upload File</label>
+                            <input type="file" class="form-control" id="file" 
+                                   name="file" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="scan_type">Scan Type</label>
+                            <select class="form-control" id="scan_type" name="scan_type">
+                                <option value="quick">Quick Scan</option>
+                                <option value="deep" selected>Deep Scan</option>
+                                <option value="ml">ML Analysis</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-upload"></i> Upload & Scan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4><i class="fas fa-history"></i> Recent Scans</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Target</th>
+                            <th>Type</th>
+                            <th>Threats Found</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-01-12 20:30</td>
+                            <td>/home/user/documents</td>
+                            <td>Directory</td>
+                            <td><span class="badge badge-warning">3</span></td>
+                            <td><span class="badge badge-success">Completed</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary">View</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
