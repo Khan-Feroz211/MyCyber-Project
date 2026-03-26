@@ -1,0 +1,43 @@
+{
+  "title": "MyCyber DLP Platform",
+  "uid": "mycyber-dlp",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Scan Volume (total)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(dlp_scans_total)", "legendFormat": "Total Scans"}]
+    },
+    {
+      "id": 2,
+      "title": "Scan Volume by Result",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{"expr": "sum by (result)(rate(dlp_scans_total[5m]))", "legendFormat": "{{result}}"}]
+    },
+    {
+      "id": 3,
+      "title": "Inference p99 Latency (s)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [{"expr": "histogram_quantile(0.99, sum(rate(dlp_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p99"}]
+    },
+    {
+      "id": 4,
+      "title": "Data Drift Score",
+      "type": "gauge",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "dlp_drift_score", "legendFormat": "Drift Score"}]
+    },
+    {
+      "id": 5,
+      "title": "Alert Rate by Decision",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [{"expr": "sum by (decision)(rate(policy_decisions_total[5m]))", "legendFormat": "{{decision}}"}]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}

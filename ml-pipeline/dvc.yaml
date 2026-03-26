@@ -1,0 +1,47 @@
+stages:
+  preprocess:
+    cmd: python stages/preprocess.py
+    deps:
+      - stages/preprocess.py
+      - data/raw/
+    outs:
+      - data/processed/X_train.npy
+      - data/processed/X_test.npy
+      - data/processed/y_train.npy
+      - data/processed/y_test.npy
+    params:
+      - params.yaml:
+          - preprocess.test_size
+          - preprocess.random_state
+
+  train:
+    cmd: python stages/train.py
+    deps:
+      - stages/train.py
+      - data/processed/X_train.npy
+      - data/processed/y_train.npy
+    outs:
+      - models/dlp_classifier.joblib
+    params:
+      - params.yaml:
+          - train.n_estimators
+          - train.max_depth
+          - train.random_state
+
+  evaluate:
+    cmd: python stages/evaluate.py
+    deps:
+      - stages/evaluate.py
+      - models/dlp_classifier.joblib
+      - data/processed/X_test.npy
+      - data/processed/y_test.npy
+    metrics:
+      - experiments/metrics.json:
+          cache: false
+
+  register:
+    cmd: python stages/register.py
+    deps:
+      - stages/register.py
+      - models/dlp_classifier.joblib
+      - experiments/metrics.json

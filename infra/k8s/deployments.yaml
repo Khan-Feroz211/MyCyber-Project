@@ -1,0 +1,311 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion
+  namespace: mycyber-dlp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ingestion
+  template:
+    metadata:
+      labels:
+        app: ingestion
+    spec:
+      containers:
+        - name: ingestion
+          image: ghcr.io/khan-feroz211/mycyber-ingestion:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: dlp-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingestion
+  namespace: mycyber-dlp
+spec:
+  selector:
+    app: ingestion
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-inference
+  namespace: mycyber-dlp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-inference
+  template:
+    metadata:
+      labels:
+        app: ml-inference
+    spec:
+      containers:
+        - name: ml-inference
+          image: ghcr.io/khan-feroz211/mycyber-ml-inference:latest
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: dlp-config
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-inference
+  namespace: mycyber-dlp
+spec:
+  selector:
+    app: ml-inference
+  ports:
+    - port: 8001
+      targetPort: 8001
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ml-inference-hpa
+  namespace: mycyber-dlp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-inference
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-engine
+  namespace: mycyber-dlp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: policy-engine
+  template:
+    metadata:
+      labels:
+        app: policy-engine
+    spec:
+      containers:
+        - name: policy-engine
+          image: ghcr.io/khan-feroz211/mycyber-policy-engine:latest
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: dlp-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8002
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-engine
+  namespace: mycyber-dlp
+spec:
+  selector:
+    app: policy-engine
+  ports:
+    - port: 8002
+      targetPort: 8002
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert
+  namespace: mycyber-dlp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert
+  template:
+    metadata:
+      labels:
+        app: alert
+    spec:
+      containers:
+        - name: alert
+          image: ghcr.io/khan-feroz211/mycyber-alert:latest
+          ports:
+            - containerPort: 8003
+          envFrom:
+            - configMapRef:
+                name: dlp-config
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8003
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert
+  namespace: mycyber-dlp
+spec:
+  selector:
+    app: alert
+  ports:
+    - port: 8003
+      targetPort: 8003
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-api
+  namespace: mycyber-dlp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dashboard-api
+  template:
+    metadata:
+      labels:
+        app: dashboard-api
+    spec:
+      containers:
+        - name: dashboard-api
+          image: ghcr.io/khan-feroz211/mycyber-dashboard-api:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: dlp-config
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dlp-secrets
+                  key: JWT_SECRET
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dlp-secrets
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-api
+  namespace: mycyber-dlp
+spec:
+  selector:
+    app: dashboard-api
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: LoadBalancer

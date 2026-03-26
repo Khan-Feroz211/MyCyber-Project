@@ -1,0 +1,18 @@
+preprocess:
+  test_size: 0.2
+  random_state: 42
+
+train:
+  n_estimators: 200
+  max_depth: 10
+  random_state: 42
+
+evaluate:
+  f1_threshold: 0.80
+
+register:
+  mlflow_tracking_uri: "http://mlflow:5000"
+  experiment_name: "dlp-pii-classifier"
+  model_name: "dlp-pii-classifier"
+  staging_alias: "staging"
+  production_alias: "production"
