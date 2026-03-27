@@ -25,10 +25,10 @@ INSERT INTO transactions (id, user_id, amount, card_last4, status, created_at) V
 
 -- API Keys Table (Contains Secrets)
 INSERT INTO api_keys (id, service, key_value, created_by) VALUES
-(1, 'Stripe', 'sk_test_FAKESTRIPEKEY1234567890abc', 'jsmith'),
-(2, 'AWS', 'AKIAFAKEAWSKEY1234567', 'jdoe'),
-(3, 'SendGrid', 'SG.1234567890abcdef.9876543210', 'bwilson'),
-(4, 'Twilio', 'AC1234567890abcdef9876543210', 'sjohnson');
+(1, 'Stripe', 'DEMO_STRIPE_KEY_FOR_DLP_TESTING', 'jsmith'),
+(2, 'AWS', 'DEMO_AWS_KEY_FOR_DLP_TESTING', 'jdoe'),
+(3, 'SendGrid', 'DEMO_SENDGRID_KEY_FOR_DLP_TESTING', 'bwilson'),
+(4, 'Twilio', 'DEMO_TWILIO_KEY_FOR_DLP_TESTING', 'sjohnson');
 
 -- Employee Records (HR Data)
 INSERT INTO employees (id, full_name, email, ssn, salary, department, hire_date) VALUES

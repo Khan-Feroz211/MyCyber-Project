@@ -1,0 +1,9 @@
+# Trivy ignore rules for intentional DLP demo fixtures
+#
+# This project is a Data Loss Prevention (DLP) platform demo. Some files
+# deliberately contain PII/secret-like patterns to serve as test data for the
+# DLP scanner. These files are not real credentials and should not trigger CI
+# failures. Suppress by file path via the workflow's skip-files input.
+#
+# Any real credentials must NEVER be committed — use GitHub Secrets / a secrets
+# manager and load them at runtime.

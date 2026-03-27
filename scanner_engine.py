@@ -381,7 +381,7 @@ SSN: 123-45-6789
 Credit Card: 4111-1111-1111-1111
 Email: test@example.com
 Password: password="secret123"
-API Key: sk_test_FAKESTRIPEKEY1234567890abc
+API Key: DEMO_API_KEY_FOR_DLP_TESTING
 """
         
         with open("test_sensitive.txt", "w") as f:
