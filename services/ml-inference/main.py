@@ -1,16 +1,16 @@
 """ML Inference Service — loads sklearn + transformer models, returns classification."""
+
 from __future__ import annotations
 
 import asyncio
 import os
+import re
 import time
 from pathlib import Path
-from typing import Any
 
 import joblib
-import numpy as np
 import structlog
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -18,14 +18,16 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, Histogram, make_asgi_app
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 # ── OpenTelemetry ──────────────────────────────────────────────────────────────
 _resource = Resource(attributes={"service.name": "ml-inference-service"})
 _provider = TracerProvider(resource=_resource)
 _provider.add_span_processor(
     BatchSpanProcessor(
-        OTLPSpanExporter(endpoint=os.getenv("OTLP_ENDPOINT", "http://otel-collector:4317"))
+        OTLPSpanExporter(
+            endpoint=os.getenv("OTLP_ENDPOINT", "http://otel-collector:4317")
+        )
     )
 )
 trace.set_tracer_provider(_provider)
@@ -69,8 +71,6 @@ class ScanResult(BaseModel):
 
 
 # ── Simple regex + heuristic classifier (fallback when no trained model) ───────
-import re
-
 PII_PATTERNS: dict[str, re.Pattern[str]] = {
     "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
     "ssn": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),

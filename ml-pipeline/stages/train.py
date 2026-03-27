@@ -1,4 +1,5 @@
 """Stage 2: Train RandomForest classifier and log to MLflow."""
+
 from __future__ import annotations
 
 from pathlib import Path

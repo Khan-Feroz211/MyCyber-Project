@@ -1,16 +1,16 @@
 """Policy Engine — consumes inference results, applies DLP policies."""
+
 from __future__ import annotations
 
 import asyncio
 import json
 import os
-import re
 from enum import Enum
 from typing import Any
 
 import redis.asyncio as aioredis
 import structlog
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -18,13 +18,15 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, make_asgi_app
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 _resource = Resource(attributes={"service.name": "policy-engine"})
 _provider = TracerProvider(resource=_resource)
 _provider.add_span_processor(
     BatchSpanProcessor(
-        OTLPSpanExporter(endpoint=os.getenv("OTLP_ENDPOINT", "http://otel-collector:4317"))
+        OTLPSpanExporter(
+            endpoint=os.getenv("OTLP_ENDPOINT", "http://otel-collector:4317")
+        )
     )
 )
 trace.set_tracer_provider(_provider)
@@ -132,7 +134,9 @@ async def process_results(redis_client: aioredis.Redis) -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
-    app.state.redis = aioredis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    app.state.redis = aioredis.from_url(
+        REDIS_URL, encoding="utf-8", decode_responses=True
+    )
     asyncio.create_task(process_results(app.state.redis))
     log.info("policy_engine_started")
 

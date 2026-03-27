@@ -1,7 +1,7 @@
 """Dashboard API — JWT auth, RBAC, REST + WebSocket, rate limiting."""
+
 from __future__ import annotations
 
-import asyncio
 import os
 import secrets
 import uuid
@@ -27,9 +27,6 @@ from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 import redis.asyncio as aioredis
 
 log = structlog.get_logger()
@@ -38,7 +35,9 @@ log = structlog.get_logger()
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://dlp:dlp@postgres:5432/dlp")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql+asyncpg://dlp:dlp@postgres:5432/dlp"
+)
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 # ── Crypto ─────────────────────────────────────────────────────────────────────
@@ -49,7 +48,9 @@ bearer_scheme = HTTPBearer()
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 # ── Prometheus metrics ─────────────────────────────────────────────────────────
-API_REQUESTS = Counter("dashboard_api_requests_total", "API requests", ["route", "method"])
+API_REQUESTS = Counter(
+    "dashboard_api_requests_total", "API requests", ["route", "method"]
+)
 
 app = FastAPI(
     title="MyCyber DLP Dashboard API",
@@ -60,6 +61,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/metrics", make_asgi_app())
+
 
 # ── WebSocket connection manager ───────────────────────────────────────────────
 class ConnectionManager:
@@ -130,7 +132,9 @@ def require_role(*roles: Role) -> Callable:
             if user.role not in roles:
                 raise HTTPException(status_code=403, detail="Insufficient permissions")
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -172,7 +176,9 @@ class AlertSummary(BaseModel):
 # ── Startup / shutdown ─────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup() -> None:
-    app.state.redis = aioredis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    app.state.redis = aioredis.from_url(
+        REDIS_URL, encoding="utf-8", decode_responses=True
+    )
     log.info("dashboard_api_started")
 
 
@@ -264,7 +270,7 @@ async def ws_events(websocket: WebSocket) -> None:
     await manager.connect(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
             # Echo back or handle ping/pong
     except WebSocketDisconnect:
         manager.disconnect(websocket)

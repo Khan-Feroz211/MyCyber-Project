@@ -1,4 +1,5 @@
 """Stage 3: Evaluate model and enforce F1 gate."""
+
 from __future__ import annotations
 
 import json

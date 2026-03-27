@@ -1,4 +1,5 @@
 """Ingestion service configuration."""
+
 from pydantic_settings import BaseSettings
 
 

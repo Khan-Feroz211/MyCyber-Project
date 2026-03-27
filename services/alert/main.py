@@ -1,4 +1,5 @@
 """Alert Service — sends Slack/email/REST callbacks on WARN/BLOCK decisions."""
+
 from __future__ import annotations
 
 import asyncio
@@ -16,13 +17,14 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, make_asgi_app
 import redis.asyncio as aioredis
-from pydantic import BaseModel
 
 _resource = Resource(attributes={"service.name": "alert-service"})
 _provider = TracerProvider(resource=_resource)
 _provider.add_span_processor(
     BatchSpanProcessor(
-        OTLPSpanExporter(endpoint=os.getenv("OTLP_ENDPOINT", "http://otel-collector:4317"))
+        OTLPSpanExporter(
+            endpoint=os.getenv("OTLP_ENDPOINT", "http://otel-collector:4317")
+        )
     )
 )
 trace.set_tracer_provider(_provider)
@@ -60,7 +62,9 @@ async def send_slack(payload: dict) -> None:
         resp = await client.post(SLACK_WEBHOOK_URL, json=message)
         resp.raise_for_status()
     ALERTS_SENT.labels(channel="slack", decision=payload["decision"]).inc()
-    log.info("slack_alert_sent", scan_id=payload["scan_id"], decision=payload["decision"])
+    log.info(
+        "slack_alert_sent", scan_id=payload["scan_id"], decision=payload["decision"]
+    )
 
 
 async def process_alerts(redis_client: aioredis.Redis) -> None:
@@ -80,7 +84,9 @@ async def process_alerts(redis_client: aioredis.Redis) -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
-    app.state.redis = aioredis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    app.state.redis = aioredis.from_url(
+        REDIS_URL, encoding="utf-8", decode_responses=True
+    )
     asyncio.create_task(process_alerts(app.state.redis))
     log.info("alert_service_started")
 

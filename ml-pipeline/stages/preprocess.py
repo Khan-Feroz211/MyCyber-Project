@@ -1,8 +1,8 @@
 """Stage 1: Preprocess raw text data into feature arrays."""
+
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import numpy as np
@@ -38,7 +38,8 @@ def main() -> None:
     y = np.array(labels)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
+        X,
+        y,
         test_size=PARAMS["test_size"],
         random_state=PARAMS["random_state"],
         stratify=y,
@@ -49,7 +50,9 @@ def main() -> None:
     np.save(PROC_DIR / "y_train.npy", y_train)
     np.save(PROC_DIR / "y_test.npy", y_test)
     joblib.dump(vectorizer, PROC_DIR / "vectorizer.joblib")
-    print(f"Preprocessed {len(texts)} samples. Train={len(y_train)}, Test={len(y_test)}")
+    print(
+        f"Preprocessed {len(texts)} samples. Train={len(y_train)}, Test={len(y_test)}"
+    )
 
 
 if __name__ == "__main__":

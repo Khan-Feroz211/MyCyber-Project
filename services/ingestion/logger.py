@@ -1,4 +1,5 @@
 """Shared structured logger factory."""
+
 import structlog
 
 

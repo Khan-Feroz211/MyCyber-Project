@@ -1,12 +1,11 @@
 """Ingestion Service — receives file events, normalises payloads, pushes to Redis."""
+
 from __future__ import annotations
 
-import json
 import uuid
 from typing import Any
 
 import redis.asyncio as aioredis
-import structlog
 from fastapi import FastAPI, HTTPException, Request, status
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
