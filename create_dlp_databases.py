@@ -226,50 +226,51 @@ print("\n5. Creating Text Format Databases...")
 config_files = [
     {
         'filename': 'databases/configs/production.env',
-        'content': '''# PRODUCTION ENVIRONMENT - HIGHLY SENSITIVE
-# DO NOT COMMIT TO VERSION CONTROL
+        'content': '''# PRODUCTION ENVIRONMENT - TEMPLATE
+# DO NOT COMMIT REAL VALUES TO VERSION CONTROL
+# Copy this file to .env.local and fill in real values from your secrets manager
 
 # Database Configuration
-DB_HOST=prod-db.cluster-123456.us-east-1.rds.amazonaws.com
+DB_HOST=REPLACE_WITH_DB_HOST
 DB_PORT=5432
-DB_NAME=production_database
-DB_USER=admin_prod
-DB_PASSWORD=SuperSecretProdPassword123!
+DB_NAME=REPLACE_WITH_DB_NAME
+DB_USER=REPLACE_WITH_DB_USER
+DB_PASSWORD=REPLACE_WITH_DB_PASSWORD
 DB_SSL=true
 
 # API Keys and Secrets
-STRIPE_SECRET_KEY=sk_test_FAKESTRIPEKEY1234567890abc
-STRIPE_PUBLISHABLE_KEY=pk_live_1234567890abcdef
-AWS_ACCESS_KEY_ID=AKIAFAKEAWSKEY1234567
-AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-GOOGLE_API_KEY=AIzaSyD-1234567890abcdefghijklmnopqrstuvwxyz
-GITHUB_TOKEN=ghp_16C7e42F292c6912E7710c838347Ae178B4a
+STRIPE_SECRET_KEY=REPLACE_WITH_STRIPE_SECRET_KEY
+STRIPE_PUBLISHABLE_KEY=REPLACE_WITH_STRIPE_PUBLISHABLE_KEY
+AWS_ACCESS_KEY_ID=REPLACE_WITH_AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=REPLACE_WITH_AWS_SECRET_ACCESS_KEY
+GOOGLE_API_KEY=REPLACE_WITH_GOOGLE_API_KEY
+GITHUB_TOKEN=REPLACE_WITH_GITHUB_TOKEN
 
 # JWT Secrets
-JWT_SECRET_KEY=!SuperDuperSecretKeyForJWT1234567890!
+JWT_SECRET_KEY=REPLACE_WITH_JWT_SECRET_KEY
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION=3600
 
 # Email Configuration
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=admin@company.com
-SMTP_PASSWORD=EmailPassword123!
+SMTP_USER=REPLACE_WITH_SMTP_USER
+SMTP_PASSWORD=REPLACE_WITH_SMTP_PASSWORD
 SMTP_USE_TLS=true
 
 # Payment Gateway
-PAYPAL_CLIENT_ID=AeA6Q8vF_1234567890abcdef
-PAYPAL_CLIENT_SECRET=EC1234567890abcdefghijklmnopqrstuvwxyz
-PAYPAL_MODE=live
+PAYPAL_CLIENT_ID=REPLACE_WITH_PAYPAL_CLIENT_ID
+PAYPAL_CLIENT_SECRET=REPLACE_WITH_PAYPAL_CLIENT_SECRET
+PAYPAL_MODE=sandbox
 
 # Encryption Keys
-ENCRYPTION_KEY=32CharKeyForAES256Encryption!!
-IV_KEY=16CharIVForAES!!
+ENCRYPTION_KEY=REPLACE_WITH_32_CHAR_AES256_KEY
+IV_KEY=REPLACE_WITH_16_CHAR_IV_KEY
 
 # Admin Credentials
-ADMIN_USERNAME=superadmin
-ADMIN_PASSWORD=Admin@123#Secure
-ROOT_PASSWORD=R00tP@ssw0rd!2024
+ADMIN_USERNAME=REPLACE_WITH_ADMIN_USERNAME
+ADMIN_PASSWORD=REPLACE_WITH_ADMIN_PASSWORD
+ROOT_PASSWORD=REPLACE_WITH_ROOT_PASSWORD
 '''
     },
     {
@@ -356,7 +357,7 @@ for i in range(100):
     if log_type == 'ERROR' and random.random() > 0.7:
         entry = f"{log_time.strftime('%Y-%m-%d %H:%M:%S')} ERROR: Payment failed for credit card 4111-1111-1111-1111, customer SSN: 123-45-6789"
     elif log_type == 'DEBUG' and random.random() > 0.8:
-        entry = f"{log_time.strftime('%Y-%m-%d %H:%M:%S')} DEBUG: User authentication with password: 'TempPass123!', API Key: sk_test_1234567890abcdef"
+        entry = f"{log_time.strftime('%Y-%m-%d %H:%M:%S')} DEBUG: User authentication with password: 'TempPass123!', API Key: DEMO_API_KEY_FOR_DLP_TESTING"
     elif log_type == 'INFO' and random.random() > 0.9:
         entry = f"{log_time.strftime('%Y-%m-%d %H:%M:%S')} INFO: Customer data exported - Contains SSNs and credit cards"
     else:
@@ -396,10 +397,10 @@ INSERT INTO transactions (id, user_id, amount, card_last4, status, created_at) V
 
 -- API Keys Table (Contains Secrets)
 INSERT INTO api_keys (id, service, key_value, created_by) VALUES
-(1, 'Stripe', 'sk_test_FAKESTRIPEKEY1234567890abc', 'jsmith'),
-(2, 'AWS', 'AKIAFAKEAWSKEY1234567', 'jdoe'),
-(3, 'SendGrid', 'SG.1234567890abcdef.9876543210', 'bwilson'),
-(4, 'Twilio', 'AC1234567890abcdef9876543210', 'sjohnson');
+(1, 'Stripe', 'DEMO_STRIPE_KEY_FOR_DLP_TESTING', 'jsmith'),
+(2, 'AWS', 'DEMO_AWS_KEY_FOR_DLP_TESTING', 'jdoe'),
+(3, 'SendGrid', 'DEMO_SENDGRID_KEY_FOR_DLP_TESTING', 'bwilson'),
+(4, 'Twilio', 'DEMO_TWILIO_KEY_FOR_DLP_TESTING', 'sjohnson');
 
 -- Employee Records (HR Data)
 INSERT INTO employees (id, full_name, email, ssn, salary, department, hire_date) VALUES

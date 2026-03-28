@@ -1,0 +1,9 @@
+mlflow==3.9.0
+scikit-learn==1.5.0
+numpy==1.26.4
+pandas==2.2.2
+evidently==0.4.30
+dvc==3.51.2
+joblib==1.4.2
+pyyaml==6.0.1
+prometheus-client==0.20.0

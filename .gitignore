@@ -35,6 +35,13 @@ Thumbs.db
 # Environment
 .env
 *.env
+!databases/configs/production.env
+
+# Private keys
+keys/*.pem
+
+# SQL dumps
+databases/text/*.sql
 
 # Test reports
 test_report_*.txt

@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: ingestion
+    static_configs:
+      - targets: ["ingestion:8000"]
+    metrics_path: /metrics
+
+  - job_name: ml-inference
+    static_configs:
+      - targets: ["ml-inference:8001"]
+    metrics_path: /metrics
+
+  - job_name: policy-engine
+    static_configs:
+      - targets: ["policy-engine:8002"]
+    metrics_path: /metrics
+
+  - job_name: alert
+    static_configs:
+      - targets: ["alert:8003"]
+    metrics_path: /metrics
+
+  - job_name: dashboard-api
+    static_configs:
+      - targets: ["dashboard-api:8080"]
+    metrics_path: /metrics

@@ -1,0 +1,186 @@
+version: "3.9"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ── Infrastructure ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dlp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dlp}
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dlp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio_data:/data]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging: *default-logging
+
+  mlflow:
+    image: python:3.11-slim
+    working_dir: /mlflow
+    command: >
+      bash -c "pip install mlflow==3.9.0 psycopg2-binary boto3 --quiet &&
+               mlflow server --host 0.0.0.0 --port 5000
+               --backend-store-uri postgresql://${POSTGRES_USER:-dlp}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dlp}
+               --default-artifact-root s3://mlflow/"
+    ports: ["5000:5000"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    ports: ["9090:9090"]
+    volumes:
+      - ./infra/docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    logging: *default-logging
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.100.0
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./infra/docker/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports: ["4317:4317", "4318:4318"]
+    logging: *default-logging
+
+  # ── DLP Microservices ────────────────────────────────────────────────────────
+  ingestion:
+    build: ./services/ingestion
+    ports: ["8000:8000"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
+
+  ml-inference:
+    build: ./services/ml-inference
+    ports: ["8001:8001"]
+    environment:
+      OTLP_ENDPOINT: http://otel-collector:4317
+      MODEL_PATH: /models/dlp_classifier.joblib
+      MODEL_VERSION: "1.0.0"
+    volumes: [minio_data:/models:ro]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
+
+  policy-engine:
+    build: ./services/policy-engine
+    ports: ["8002:8002"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
+
+  alert:
+    build: ./services/alert
+    ports: ["8003:8003"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
+
+  dashboard-api:
+    build: ./services/dashboard-api
+    ports: ["8080:8080"]
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dlp}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dlp}
+      REDIS_URL: redis://redis:6379/0
+      OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
+
+volumes:
+  redis_data:
+  postgres_data:
+  minio_data:
+  grafana_data:
