@@ -1,0 +1,24 @@
+stages:
+  preprocess:
+    cmd: python ml/pipelines/preprocess.py
+    deps:
+      - ml/pipelines/preprocess.py
+      - ml/data/raw/pii_samples.csv
+    outs:
+      - ml/data/processed/train.csv
+      - ml/data/processed/test.csv
+
+  evaluate:
+    cmd: python ml/pipelines/evaluate.py
+    deps:
+      - ml/pipelines/evaluate.py
+      - ml/data/processed/test.csv
+      - backend/app/services/pii_scanner.py
+      - backend/app/services/ner_model.py
+      - backend/app/services/leakage_scorer.py
+    params:
+      - params.yaml:
+          - model.ner_model_name
+          - model.ner_min_confidence
+    outs:
+      - ml/reports/evaluation_report.json

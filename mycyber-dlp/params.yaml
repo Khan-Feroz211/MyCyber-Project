@@ -1,0 +1,11 @@
+model:
+  ner_model_name: "dslim/bert-base-NER"
+  ner_min_confidence: 0.85
+  use_transformer: true
+  max_text_length: 50000
+  chunk_size: 400
+  chunk_overlap: 50
+
+evaluation:
+  test_split: 0.2
+  random_seed: 42

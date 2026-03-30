@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Models cache (too large to track)
+/tmp/hf_models/
+
+# Test artifacts
+.pytest_cache/
