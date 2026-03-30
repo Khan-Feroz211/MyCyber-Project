@@ -49,7 +49,7 @@ class TestLoadNerModel:
 
     def test_load_ner_model_uses_hf_pipeline(self):
         _reset_pipeline()
-        with patch("transformers.pipeline") as mock_hf:
+        with patch("app.services.ner_model._hf_pipeline") as mock_hf:
             mock_hf.return_value = MagicMock()
             load_ner_model()
             mock_hf.assert_called_once_with(
@@ -63,7 +63,7 @@ class TestLoadNerModel:
     def test_load_ner_model_is_idempotent(self):
         """Calling load_ner_model twice should not reload."""
         _reset_pipeline()
-        with patch("transformers.pipeline") as mock_hf:
+        with patch("app.services.ner_model._hf_pipeline") as mock_hf:
             mock_hf.return_value = MagicMock()
             load_ner_model()
             load_ner_model()

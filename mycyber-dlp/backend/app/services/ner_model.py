@@ -2,6 +2,8 @@ import logging
 import time
 from typing import Optional
 
+from transformers import pipeline as _hf_pipeline
+
 from app.models.schemas import DetectedEntity, EntityType, SeverityLevel
 from app.services.leakage_scorer import ENTITY_SEVERITY_MAP
 
@@ -34,10 +36,8 @@ def load_ner_model() -> None:
     if _pipeline is not None:
         return
 
-    from transformers import pipeline as hf_pipeline
-
     t0 = time.time()
-    _pipeline = hf_pipeline(
+    _pipeline = _hf_pipeline(
         "ner",
         model=MODEL_NAME,
         aggregation_strategy="simple",
