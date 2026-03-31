@@ -1,19 +1,2 @@
-# Basic requirements for the Project Assistant Bot
-
-# GUI framework (comes with Python)
-# tkinter is built-in, no need to install
-
-# Optional: For enhanced AI responses (requires API key)
-# anthropic>=0.18.0
-
-# For date/time handling (built-in)
-# datetime
-
-# For JSON data storage (built-in)
-# json
-
-# All required libraries are part of Python's standard library!
-# No additional installations needed for basic functionality.
-
-# If you want to add AI-powered responses in the future:
-# pip install anthropic
+# Web framework
+Flask>=2.0.0
