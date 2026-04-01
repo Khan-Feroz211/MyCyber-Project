@@ -41,7 +41,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
     alertApi
       .getAlertCount()
       .then((res) => {
-        const count = res.data?.count ?? res.data ?? 0;
+        const count = res.data?.unacknowledged ?? 0;
         setAlertCount(Number(count));
       })
       .catch(() => {});

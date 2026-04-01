@@ -18,7 +18,7 @@ export const scanApi = {
   scanFile(filename, contentB64) {
     return client.post("/api/v1/scan/file", {
       filename,
-      content: contentB64,
+      content_base64: contentB64,
     });
   },
 
@@ -33,8 +33,7 @@ export const scanApi = {
     return client.post("/api/v1/scan/network", {
       payload,
       source_ip: sourceIp,
-      destination,
-      protocol,
+      destination_ip: destination,
     });
   },
 
