@@ -1,41 +1,60 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 venv/
+.venv/
 env/
 ENV/
 
-# Database
+# ── Database ──────────────────────────────────────────────────────────────────
 *.db
 *.sqlite3
 data/
 
-# Logs
+# ── Logs ──────────────────────────────────────────────────────────────────────
 logs/
 *.log
+uploads/
 
-# IDE
+# ── IDE ───────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# Backup files
+# ── Backup files ──────────────────────────────────────────────────────────────
 *.backup
 *.bak
 *~
 
-# Environment
+# ── Environment / secrets (never commit!) ────────────────────────────────────
 .env
 *.env
+.env.docker
 
-# Test reports
+# ── Node / frontend ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+
+# ── ML / model cache ──────────────────────────────────────────────────────────
+mlruns/
+mlflow.db
+/tmp/hf_models/
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
 test_report_*.txt
 diagnostic_report.txt
+
+# ── Docker overrides (local only) ────────────────────────────────────────────
+docker-compose.override.yml
