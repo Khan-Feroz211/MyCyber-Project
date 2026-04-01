@@ -92,12 +92,8 @@ export function AuthProvider({ children }) {
    * @param {string} fullName
    */
   const register = useCallback(async (email, password, fullName) => {
-    try {
-      const res = await authApi.register(email, password, fullName);
-      return res.data;
-    } catch (err) {
-      throw err;
-    }
+    const res = await authApi.register(email, password, fullName);
+    return res.data;
   }, []);
 
   const isAuthenticated = useMemo(() => !!token, [token]);
