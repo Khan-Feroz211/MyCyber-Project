@@ -235,7 +235,11 @@ def _regex_scan(text: str) -> List[DetectedEntity]:
 
 
 def _ner_scan(text: str) -> List[DetectedEntity]:
-    """Run transformer NER via ner_model.run_ner and return additional entities."""
+    """Run transformer NER via ner_model.run_ner and return additional entities.
+
+    Score filtering (>= 0.85) is applied inside ner_model.run_ner; items
+    returned here are already above the threshold.
+    """
     entities: List[DetectedEntity] = []
     for item in _ner_model.run_ner(text):
         label = item.get("entity_group", item.get("entity", "MISC")).upper()

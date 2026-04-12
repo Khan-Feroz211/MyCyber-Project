@@ -10,7 +10,7 @@ without touching any of the regex / scoring logic in scanner.py.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 _logger = logging.getLogger(__name__)
 
@@ -18,11 +18,12 @@ _logger = logging.getLogger(__name__)
 _pipeline: Optional[object] = None
 
 
-def run_ner(text: str) -> List[Dict]:
+def run_ner(text: str) -> List[Dict[str, Any]]:
     """Run the NER pipeline over *text*.
 
     Returns a list of raw result dicts (HuggingFace format) with at least
     ``entity_group``, ``score``, ``word``, ``start``, and ``end`` keys.
+    Only results with confidence >= 0.85 are returned.
     Returns an empty list when the pipeline is not loaded or on error.
     """
     if _pipeline is None:

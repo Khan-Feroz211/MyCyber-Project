@@ -138,7 +138,7 @@ async def test_scan_text_empty_rejected(
 
 @pytest.mark.asyncio
 async def test_scan_text_too_long(client: AsyncClient, auth_headers: dict) -> None:
-    """Text exceeding the 1 000 000-character limit is rejected with 422."""
+    """Text exceeding the 1,000,000-character limit is rejected with 422."""
     response = await client.post(
         "/api/v1/scan/text",
         json={"text": "A" * 1_000_001},
