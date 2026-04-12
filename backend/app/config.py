@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 24
 
     # MLflow
-    mlflow_tracking_uri: str = "http://localhost:5000"
+    mlflow_tracking_uri: str = "http://mlflow:5001"
 
     class Config:
         env_file = ".env"
