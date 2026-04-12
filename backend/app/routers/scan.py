@@ -89,7 +89,7 @@ async def scan_text(
             "scan_type": "text",
             "status": "error",
             "endpoint": "/api/v1/scan/text",
-        })
+        }, exc_info=True)
         raise
 
 
@@ -154,7 +154,7 @@ async def scan_file(
             "scan_type": "file",
             "status": "error",
             "endpoint": "/api/v1/scan/file",
-        })
+        }, exc_info=True)
         raise
 
 
@@ -213,7 +213,7 @@ async def scan_network(
             "scan_type": "network",
             "status": "error",
             "endpoint": "/api/v1/scan/network",
-        })
+        }, exc_info=True)
         raise
 
 
