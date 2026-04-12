@@ -92,5 +92,5 @@ def record_scan(
     for entity in entities:
         entities_detected_total.labels(
             entity_type=entity.entity_type.value,
-            severity=entity.severity.value,
+            severity=severity,
         ).inc()
