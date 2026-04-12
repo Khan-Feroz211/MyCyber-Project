@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Tests for health, metrics, and model-info endpoints."""
+
+from __future__ import annotations
 
 import pytest
 from httpx import AsyncClient

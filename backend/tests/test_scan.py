@@ -1,13 +1,14 @@
-from __future__ import annotations
-
 """Tests for all scan endpoints.
 
 The NER model is never downloaded — app.services.ner_model.run_ner is
 patched to return [] for every test that triggers a scan.
 """
 
-import pytest
+from __future__ import annotations
+
 from unittest.mock import patch
+
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,9 +42,7 @@ async def test_scan_text_clean(client: AsyncClient, auth_headers: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_scan_text_cnic_critical(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_scan_text_cnic_critical(client: AsyncClient, auth_headers: dict) -> None:
     """A Pakistani CNIC number triggers CRITICAL severity and BLOCK action."""
     with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
         response = await client.post(
@@ -104,9 +103,7 @@ async def test_scan_text_multiple_entities(
             "/api/v1/scan/text",
             json={
                 "text": (
-                    "Name: Ali Khan, "
-                    "CNIC: 42101-1234567-1, "
-                    "email: ali@corp.com"
+                    "Name: Ali Khan, " "CNIC: 42101-1234567-1, " "email: ali@corp.com"
                 )
             },
             headers=auth_headers,

@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 """Tests for scan history, alerts, tenant isolation, and plan limits.
 
 Run with:  pytest backend/tests/test_scan_history.py -v
 """
+
+from __future__ import annotations
 
 import pytest
 from httpx import AsyncClient
@@ -26,6 +26,7 @@ _CRITICAL_TEXT = "sk_" + "a" * 30
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _do_scan(client: AsyncClient, headers: dict, text: str = _SAFE_TEXT) -> None:
     resp = await client.post(
@@ -109,7 +110,11 @@ async def test_tenant_isolation(
     # Register and login user_b
     await client.post(
         "/api/v1/auth/register",
-        json={"email": "userb@tenant-iso.com", "password": "password123", "full_name": "B"},
+        json={
+            "email": "userb@tenant-iso.com",
+            "password": "password123",
+            "full_name": "B",
+        },
     )
     resp_b = await client.post(
         "/api/v1/auth/login",
@@ -174,9 +179,7 @@ async def test_plan_limit_enforcement(
 ) -> None:
     """When scan_count_month equals the plan limit the next scan returns 429."""
     # Directly set the user's monthly scan count to the free-plan limit (100)
-    result = await db_session.execute(
-        select(User).where(User.email == "user@test.com")
-    )
+    result = await db_session.execute(select(User).where(User.email == "user@test.com"))
     user = result.scalars().first()
     assert user is not None
     user.scan_count_month = 100

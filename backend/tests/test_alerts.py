@@ -1,12 +1,13 @@
-from __future__ import annotations
-
 """Tests for alert creation, listing, acknowledgement, and counting.
 
 NER is stubbed out so no model weights are downloaded.
 """
 
-import pytest
+from __future__ import annotations
+
 from unittest.mock import patch
+
+import pytest
 from httpx import AsyncClient
 
 
@@ -41,9 +42,7 @@ async def test_critical_scan_creates_alert(
 
 
 @pytest.mark.asyncio
-async def test_safe_scan_no_alert(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_safe_scan_no_alert(client: AsyncClient, auth_headers: dict) -> None:
     """A SAFE scan does not create any alerts."""
     with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
         await client.post(
@@ -62,9 +61,7 @@ async def test_safe_scan_no_alert(
 
 
 @pytest.mark.asyncio
-async def test_acknowledge_alert(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_acknowledge_alert(client: AsyncClient, auth_headers: dict) -> None:
     """Acknowledging an alert marks it as acknowledged and removes it from the unack count."""
     with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
         await client.post(
@@ -96,9 +93,7 @@ async def test_acknowledge_alert(
 
 
 @pytest.mark.asyncio
-async def test_alert_count_endpoint(
-    client: AsyncClient, auth_headers: dict
-) -> None:
+async def test_alert_count_endpoint(client: AsyncClient, auth_headers: dict) -> None:
     """GET /api/v1/alerts/count returns a JSON object with an 'unacknowledged' key."""
     response = await client.get("/api/v1/alerts/count", headers=auth_headers)
     assert response.status_code == 200

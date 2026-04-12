@@ -11,12 +11,14 @@ filterwarnings = [
 
 [tool.ruff]
 line-length = 88
-select = ["E", "F", "W", "I"]
-ignore = ["E501"]
 exclude = [
     ".venv", "venv", "alembic",
     "__pycache__", ".git",
 ]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
 
 [tool.black]
 line-length = 88

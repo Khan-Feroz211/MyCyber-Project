@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 DLP scan engine: regex-based entity detection with optional HuggingFace NER.
 
@@ -12,6 +10,8 @@ scan_file(req)            Decodes base64 → text → scan.
 scan_network(req)         Scans network payload.
 get_model_info()          Returns dict consumed by GET /scan/models/info.
 """
+
+from __future__ import annotations
 
 import base64
 import logging
@@ -52,16 +52,12 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         35,
     ),
     (
-        re.compile(
-            r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"
-        ),
+        re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),
         EntityType.EMAIL,
         10,
     ),
     (
-        re.compile(
-            r"\b(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b"
-        ),
+        re.compile(r"\b(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b"),
         EntityType.PHONE,
         10,
     ),
@@ -100,16 +96,12 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         30,
     ),
     (
-        re.compile(
-            r"\b[A-Z]{1,2}\d{7,9}\b"  # Passport-style
-        ),
+        re.compile(r"\b[A-Z]{1,2}\d{7,9}\b"),  # Passport-style
         EntityType.PASSPORT,
         30,
     ),
     (
-        re.compile(
-            r"\b[A-Z]{1,2}\d{6,8}[A-Z]?\b"  # Driver's license
-        ),
+        re.compile(r"\b[A-Z]{1,2}\d{6,8}[A-Z]?\b"),  # Driver's license
         EntityType.DRIVERS_LICENSE,
         25,
     ),
@@ -123,9 +115,7 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         15,
     ),
     (
-        re.compile(
-            r"\b(?:19|20)\d{2}[-/]\d{2}[-/]\d{2}\b"
-        ),
+        re.compile(r"\b(?:19|20)\d{2}[-/]\d{2}[-/]\d{2}\b"),
         EntityType.DATE_OF_BIRTH,
         25,
     ),
@@ -203,6 +193,7 @@ def get_model_info() -> dict:
 # Core scan logic
 # ---------------------------------------------------------------------------
 
+
 def _regex_scan(text: str) -> List[DetectedEntity]:
     """Run all regex patterns over *text* and return detected entities."""
     entities: List[DetectedEntity] = []
@@ -265,9 +256,7 @@ def _calculate_severity_and_score(
     if not entities:
         return SeverityLevel.SAFE, 0.0
 
-    weight_map: Dict[EntityType, int] = {
-        et: w for _, et, w in _REGEX_PATTERNS
-    }
+    weight_map: Dict[EntityType, int] = {et: w for _, et, w in _REGEX_PATTERNS}
 
     total_weight = 0
     has_critical_type = False
@@ -357,6 +346,7 @@ def perform_scan(
 # Request-level wrappers
 # ---------------------------------------------------------------------------
 
+
 def scan_text(req: ScanTextRequest) -> ScanResponse:
     """Scan a plain-text payload."""
     return perform_scan(req.text, scan_id=req.scan_id)
@@ -368,9 +358,7 @@ def scan_file(req: ScanFileRequest) -> ScanResponse:
         raw_bytes = base64.b64decode(req.content_base64)
         text = raw_bytes.decode("utf-8", errors="replace")
     except Exception as exc:
-        raise ValueError(
-            f"Could not decode file '{req.filename}': {exc}"
-        ) from exc
+        raise ValueError(f"Could not decode file '{req.filename}': {exc}") from exc
 
     return perform_scan(text, scan_id=req.scan_id)
 

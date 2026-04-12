@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Thin NER-model wrapper used by the scanner engine.
 
 Keeping the pipeline in its own module allows tests to mock just two names:
@@ -8,6 +6,8 @@ Keeping the pipeline in its own module allows tests to mock just two names:
 
 without touching any of the regex / scoring logic in scanner.py.
 """
+
+from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional

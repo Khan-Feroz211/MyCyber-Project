@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 """Shared pytest fixtures for backend tests.
 
 All app env-vars are set here (at the top of this file) BEFORE any app module
 is imported so that module-level validation in services/auth.py succeeds.
 """
+
+from __future__ import annotations
 
 import os
 import sys
@@ -24,7 +24,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from contextlib import asynccontextmanager  # noqa: E402
 from typing import AsyncGenerator  # noqa: E402
 
-import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import (  # noqa: E402
@@ -90,6 +89,7 @@ app.dependency_overrides[get_db] = _override_get_db
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     """Provide an AsyncClient with a fresh database per test."""
@@ -141,7 +141,9 @@ async def registered_user(db_session: AsyncSession) -> User:
     """Insert a free-plan test user directly into the DB and return it."""
     user = User(
         email="test@mycyber.com",
-        hashed_password=hash_password("password123"),  # noqa: S106 — test-only credential
+        hashed_password=hash_password(
+            "password123"
+        ),  # noqa: S106 — test-only credential
         full_name="Test User",
         tenant_id="test-tenant-001",
         plan="free",
@@ -164,7 +166,9 @@ async def _create_user(
     """Insert a test user with a known password into *session*."""
     user = User(
         email=email,
-        hashed_password=hash_password("password123"),  # noqa: S106 — test-only credential
+        hashed_password=hash_password(
+            "password123"
+        ),  # noqa: S106 — test-only credential
         full_name=full_name,
         tenant_id=tenant_id,
         plan=plan,
