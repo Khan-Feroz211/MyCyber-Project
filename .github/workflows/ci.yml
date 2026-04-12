@@ -103,8 +103,12 @@ jobs:
       - name: Check Bandit results
         run: |
           python3 - <<'EOF'
-          import json, sys
-          with open("bandit-report.json") as f:
+          import json, os, sys
+          path = "bandit-report.json"
+          if not os.path.exists(path) or os.path.getsize(path) == 0:
+              print("WARN: bandit-report.json is missing or empty — bandit may have failed to run")
+              sys.exit(1)
+          with open(path) as f:
               report = json.load(f)
           high = [
               r for r in report.get("results", [])

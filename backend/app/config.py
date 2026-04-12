@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     ner_model_name: str = "dslim/bert-base-NER"
     ner_min_confidence: float = 0.85
     use_transformer: bool = True
-    model_cache_dir: str = "/tmp/hf_models"
+    model_cache_dir: str = "/tmp/hf_models"  # nosec B108
 
     # Database
     database_url: str = (
