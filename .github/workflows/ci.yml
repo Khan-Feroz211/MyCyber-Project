@@ -1,46 +1,307 @@
-name: CyberShield DLP CI
+name: MyCyber DLP — CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  # ---------------------------------------------------------------------------
+  # JOB 1 — Lint Python backend
+  # ---------------------------------------------------------------------------
+  lint-backend:
+    name: Lint Python backend
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, '3.10']
-
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov flake8
-    
-    - name: Lint with flake8
-      run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__
-        # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv,__pycache__
-    
-    - name: Test imports
-      run: |
-        python -c "from flask import Flask; print('Flask imported successfully')"
-    
-    - name: Display Python version
-      run: python --version
-    
-    - name: Show installed packages
-      run: pip list
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting tools
+        run: pip install ruff==0.6.9 black==26.3.1
+
+      - name: Run ruff
+        run: ruff check backend/app backend/tests
+
+      - name: Run black (format check)
+        run: black --check backend/app backend/tests
+
+  # ---------------------------------------------------------------------------
+  # JOB 2 — Lint React frontend
+  # ---------------------------------------------------------------------------
+  lint-frontend:
+    name: Lint React frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run ESLint (if configured)
+        run: npx eslint src --ext .js,.jsx --max-warnings 0 || true
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+  # ---------------------------------------------------------------------------
+  # JOB 3 — Security scanning (Bandit SAST)
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security scanning
+    runs-on: ubuntu-latest
+    needs: [lint-backend]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Bandit
+        run: pip install bandit==1.7.10
+
+      - name: Run Bandit SAST scan
+        run: >
+          bandit -r backend/app
+          -c backend/.bandit
+          -f json
+          -o bandit-report.json
+          || true
+
+      - name: Check Bandit results
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          path = "bandit-report.json"
+          if not os.path.exists(path) or os.path.getsize(path) == 0:
+              print("WARN: bandit-report.json is missing or empty — bandit may have failed to run")
+              sys.exit(1)
+          with open(path) as f:
+              report = json.load(f)
+          high = [
+              r for r in report.get("results", [])
+              if r["issue_severity"] == "HIGH"
+              and r["issue_confidence"] == "HIGH"
+          ]
+          if high:
+              print(f"FAIL: {len(high)} HIGH severity issues found")
+              for r in high:
+                  print(
+                      f"  {r['filename']}:{r['line_number']}"
+                      f" — {r['issue_text']}"
+                  )
+              sys.exit(1)
+          print("PASS: No HIGH severity issues found")
+          EOF
+
+      - name: Upload Bandit security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+
+  # ---------------------------------------------------------------------------
+  # JOB 4 — Backend tests (pytest + coverage)
+  # ---------------------------------------------------------------------------
+  test-backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    needs: [lint-backend]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install backend dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-cov
+        working-directory: backend
+
+      - name: Run pytest with coverage
+        run: |
+          pytest tests/ -v \
+            --tb=short \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=60
+        working-directory: backend
+        env:
+          APP_ENV: testing
+          JWT_SECRET_KEY: test-secret-key-for-ci-only
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          USE_TRANSFORMER: "false"
+          NER_MODEL_NAME: "dslim/bert-base-NER"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: backend/coverage.xml
+
+  # ---------------------------------------------------------------------------
+  # JOB 5 — Container vulnerability scan (Trivy)
+  # ---------------------------------------------------------------------------
+  trivy-scan:
+    name: Container vulnerability scan
+    runs-on: ubuntu-latest
+    needs: [test-backend]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend Docker image for scanning
+        run: docker build -t mycyber-backend:scan ./backend
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: mycyber-backend:scan
+          format: table
+          exit-code: "0"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          output: trivy-report.txt
+
+      - name: Upload Trivy scan report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-scan-report
+          path: trivy-report.txt
+
+  # ---------------------------------------------------------------------------
+  # JOB 6 — Build and push Docker images to GHCR
+  # ---------------------------------------------------------------------------
+  build-and-push:
+    name: Build and push Docker images
+    runs-on: ubuntu-latest
+    needs: [test-backend, lint-frontend, security-scan]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata for backend image
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push backend Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for frontend image
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push frontend Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # JOB 7 — Pipeline notification / summary
+  # ---------------------------------------------------------------------------
+  notify:
+    name: Pipeline notification
+    runs-on: ubuntu-latest
+    needs: [lint-backend, lint-frontend, security-scan, test-backend, build-and-push]
+    if: always()
+    permissions: {}
+    steps:
+      - name: Write pipeline summary to job summary
+        run: |
+          echo "## MyCyber DLP CI/CD Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint Backend | ${{ needs.lint-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Push | ${{ needs.build-and-push.result }} |" >> $GITHUB_STEP_SUMMARY

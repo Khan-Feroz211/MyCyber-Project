@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 """Shared pytest fixtures for backend tests.
 
 All app env-vars are set here (at the top of this file) BEFORE any app module
 is imported so that module-level validation in services/auth.py succeeds.
 """
+
+from __future__ import annotations
 
 import os
 import sys
@@ -24,7 +24,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from contextlib import asynccontextmanager  # noqa: E402
 from typing import AsyncGenerator  # noqa: E402
 
-import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import (  # noqa: E402
@@ -51,7 +50,9 @@ TestSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 # App imports (after env vars are set)
 # ---------------------------------------------------------------------------
 from app.db.database import Base, get_db  # noqa: E402
+from app.db.models import User  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services.auth import hash_password  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +88,7 @@ app.dependency_overrides[get_db] = _override_get_db
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
@@ -132,3 +134,63 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+@pytest_asyncio.fixture
+async def registered_user(db_session: AsyncSession) -> User:
+    """Insert a free-plan test user directly into the DB and return it."""
+    user = User(
+        email="test@mycyber.com",
+        hashed_password=hash_password(
+            "password123"
+        ),  # noqa: S106 — test-only credential
+        full_name="Test User",
+        tenant_id="test-tenant-001",
+        plan="free",
+        scan_count_month=0,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+async def _create_user(
+    session: AsyncSession,
+    *,
+    email: str,
+    plan: str,
+    tenant_id: str,
+    full_name: str,
+) -> None:
+    """Insert a test user with a known password into *session*."""
+    user = User(
+        email=email,
+        hashed_password=hash_password(
+            "password123"
+        ),  # noqa: S106 — test-only credential
+        full_name=full_name,
+        tenant_id=tenant_id,
+        plan=plan,
+        scan_count_month=0,
+    )
+    session.add(user)
+    await session.commit()
+
+
+@pytest_asyncio.fixture
+async def pro_user_headers(client: AsyncClient, db_session: AsyncSession) -> dict:
+    """Create a pro-plan user and return its Authorization headers."""
+    await _create_user(
+        db_session,
+        email="pro@mycyber.com",
+        plan="pro",
+        tenant_id="pro-tenant-001",
+        full_name="Pro User",
+    )
+    resp = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "pro@mycyber.com", "password": "password123"},
+    )
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

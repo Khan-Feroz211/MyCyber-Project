@@ -95,6 +95,7 @@ def track_scan(scan_type: str) -> Callable:
                 )
 
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 start = time.perf_counter()
@@ -112,6 +113,7 @@ def track_scan(scan_type: str) -> Callable:
 
             return async_wrapper
         else:
+
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 start = time.perf_counter()

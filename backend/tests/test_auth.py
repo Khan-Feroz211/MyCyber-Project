@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 """Tests for authentication endpoints.
 
 Run with:  pytest backend/tests/test_auth.py -v
 """
+
+from __future__ import annotations
 
 import pytest
 from httpx import AsyncClient
@@ -84,7 +84,11 @@ async def test_login_wrong_password(client: AsyncClient) -> None:
     """Wrong password returns 401 Unauthorized."""
     await client.post(
         "/api/v1/auth/register",
-        json={"email": "dave@example.com", "password": "correct123", "full_name": "Dave"},
+        json={
+            "email": "dave@example.com",
+            "password": "correct123",
+            "full_name": "Dave",
+        },
     )
     resp = await client.post(
         "/api/v1/auth/login",

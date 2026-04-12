@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 DLP scan engine: regex-based entity detection with optional HuggingFace NER.
 
@@ -12,6 +10,8 @@ scan_file(req)            Decodes base64 → text → scan.
 scan_network(req)         Scans network payload.
 get_model_info()          Returns dict consumed by GET /scan/models/info.
 """
+
+from __future__ import annotations
 
 import base64
 import logging
@@ -29,6 +29,7 @@ from ..models.schemas import (
     ScanTextRequest,
     SeverityLevel,
 )
+from . import ner_model as _ner_model
 
 _logger = logging.getLogger(__name__)
 
@@ -51,16 +52,12 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         35,
     ),
     (
-        re.compile(
-            r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"
-        ),
+        re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),
         EntityType.EMAIL,
         10,
     ),
     (
-        re.compile(
-            r"\b(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b"
-        ),
+        re.compile(r"\b(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b"),
         EntityType.PHONE,
         10,
     ),
@@ -89,21 +86,22 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         40,
     ),
     (
+        re.compile(r"\b\d{5}-\d{7}-\d\b"),
+        EntityType.CNIC,
+        60,
+    ),
+    (
         re.compile(r"\b\d{8,17}\b"),
         EntityType.BANK_ACCOUNT,
         30,
     ),
     (
-        re.compile(
-            r"\b[A-Z]{1,2}\d{7,9}\b"  # Passport-style
-        ),
+        re.compile(r"\b[A-Z]{1,2}\d{7,9}\b"),  # Passport-style
         EntityType.PASSPORT,
         30,
     ),
     (
-        re.compile(
-            r"\b[A-Z]{1,2}\d{6,8}[A-Z]?\b"  # Driver's license
-        ),
+        re.compile(r"\b[A-Z]{1,2}\d{6,8}[A-Z]?\b"),  # Driver's license
         EntityType.DRIVERS_LICENSE,
         25,
     ),
@@ -117,16 +115,14 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         15,
     ),
     (
-        re.compile(
-            r"\b(?:19|20)\d{2}[-/]\d{2}[-/]\d{2}\b"
-        ),
+        re.compile(r"\b(?:19|20)\d{2}[-/]\d{2}[-/]\d{2}\b"),
         EntityType.DATE_OF_BIRTH,
         25,
     ),
 ]
 
 # Entities that immediately push severity to CRITICAL
-_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD}
+_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD, EntityType.CNIC}
 
 # Entities that push severity to at least HIGH
 _HIGH_TYPES = {
@@ -138,9 +134,8 @@ _HIGH_TYPES = {
 }
 
 # ---------------------------------------------------------------------------
-# NER pipeline (optional — populated by load_ner_model)
+# NER state (pipeline lives in ner_model module; these track load status)
 # ---------------------------------------------------------------------------
-_ner_pipeline = None
 _model_loaded: bool = False
 _model_name: str = "dslim/bert-base-NER"
 _use_transformer: bool = True
@@ -159,12 +154,12 @@ SCANNER_NAMES: List[str] = ["text", "file", "network", "ner"]
 
 def load_ner_model() -> None:
     """Load the HuggingFace NER pipeline (synchronous — run via asyncio.to_thread)."""
-    global _ner_pipeline, _model_loaded, _use_transformer
+    global _model_loaded, _use_transformer
 
     try:
         from transformers import pipeline  # type: ignore[import]
 
-        _ner_pipeline = pipeline(
+        _ner_model._pipeline = pipeline(
             "ner",
             model=_model_name,
             aggregation_strategy="simple",
@@ -198,6 +193,7 @@ def get_model_info() -> dict:
 # Core scan logic
 # ---------------------------------------------------------------------------
 
+
 def _regex_scan(text: str) -> List[DetectedEntity]:
     """Run all regex patterns over *text* and return detected entities."""
     entities: List[DetectedEntity] = []
@@ -230,30 +226,26 @@ def _regex_scan(text: str) -> List[DetectedEntity]:
 
 
 def _ner_scan(text: str) -> List[DetectedEntity]:
-    """Run transformer NER pipeline over *text* and return additional entities."""
-    if _ner_pipeline is None:
-        return []
+    """Run transformer NER via ner_model.run_ner and return additional entities.
+
+    Score filtering (>= 0.85) is applied inside ner_model.run_ner; items
+    returned here are already above the threshold.
+    """
     entities: List[DetectedEntity] = []
-    try:
-        results = _ner_pipeline(text[:512])  # BERT-family models have a 512-token limit
-        for item in results:
-            label = item.get("entity_group", item.get("entity", "MISC")).upper()
-            entity_type = _NER_LABEL_MAP.get(label, EntityType.CUSTOM)
-            score: float = float(item.get("score", 0.0))
-            if score < 0.85:
-                continue
-            entities.append(
-                DetectedEntity(
-                    entity_type=entity_type,
-                    value=item.get("word", ""),
-                    confidence=round(score, 4),
-                    start_pos=item.get("start"),
-                    end_pos=item.get("end"),
-                    context=None,
-                )
+    for item in _ner_model.run_ner(text):
+        label = item.get("entity_group", item.get("entity", "MISC")).upper()
+        entity_type = _NER_LABEL_MAP.get(label, EntityType.CUSTOM)
+        score: float = float(item.get("score", 0.0))
+        entities.append(
+            DetectedEntity(
+                entity_type=entity_type,
+                value=item.get("word", ""),
+                confidence=round(score, 4),
+                start_pos=item.get("start"),
+                end_pos=item.get("end"),
+                context=None,
             )
-    except Exception as exc:  # pragma: no cover
-        _logger.warning("NER scan failed: %s", exc)
+        )
     return entities
 
 
@@ -264,9 +256,7 @@ def _calculate_severity_and_score(
     if not entities:
         return SeverityLevel.SAFE, 0.0
 
-    weight_map: Dict[EntityType, int] = {
-        et: w for _, et, w in _REGEX_PATTERNS
-    }
+    weight_map: Dict[EntityType, int] = {et: w for _, et, w in _REGEX_PATTERNS}
 
     total_weight = 0
     has_critical_type = False
@@ -325,7 +315,7 @@ def perform_scan(
         scan_id = str(uuid.uuid4())
 
     entities = _regex_scan(text)
-    if _model_loaded and _ner_pipeline is not None:
+    if _model_loaded and _ner_model._pipeline is not None:
         entities.extend(_ner_scan(text))
 
     # Deduplicate by (type, value) after combining regex + NER
@@ -356,6 +346,7 @@ def perform_scan(
 # Request-level wrappers
 # ---------------------------------------------------------------------------
 
+
 def scan_text(req: ScanTextRequest) -> ScanResponse:
     """Scan a plain-text payload."""
     return perform_scan(req.text, scan_id=req.scan_id)
@@ -367,9 +358,7 @@ def scan_file(req: ScanFileRequest) -> ScanResponse:
         raw_bytes = base64.b64decode(req.content_base64)
         text = raw_bytes.decode("utf-8", errors="replace")
     except Exception as exc:
-        raise ValueError(
-            f"Could not decode file '{req.filename}': {exc}"
-        ) from exc
+        raise ValueError(f"Could not decode file '{req.filename}': {exc}") from exc
 
     return perform_scan(text, scan_id=req.scan_id)
 

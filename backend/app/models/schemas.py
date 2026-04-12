@@ -6,7 +6,6 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-
 # ---------------------------------------------------------------------------
 # Existing enumerations and schemas (kept exactly as defined)
 # ---------------------------------------------------------------------------
@@ -33,6 +32,7 @@ class EntityType(str, Enum):
     PASSPORT = "PASSPORT"
     DRIVERS_LICENSE = "DRIVERS_LICENSE"
     BANK_ACCOUNT = "BANK_ACCOUNT"
+    CNIC = "CNIC"
     CUSTOM = "CUSTOM"
 
 

@@ -21,9 +21,9 @@ from ..models.schemas import (
     ScanResponse,
     ScanTextRequest,
 )
+from ..services import scanner as _scanner
 from ..services.alert_service import create_alert_if_needed
 from ..services.scan_store import get_scan_by_id, get_scan_history, save_scan
-from ..services import scanner as _scanner
 
 router = APIRouter(prefix="/scan", tags=["scan"])
 
@@ -52,7 +52,9 @@ async def scan_text(
             scan_type="text",
             input_preview=req.text,
         )
-        await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
+        await create_alert_if_needed(
+            db=db, user=current_user, scan_record=record, scan_response=result
+        )
         record_scan(
             scan_type="text",
             severity=result.severity.value,
@@ -61,17 +63,20 @@ async def scan_text(
             risk_score=result.risk_score,
             entities=result.entities,
         )
-        logger.info("Text scan completed", extra={
-            "user_id": current_user.id,
-            "tenant_id": current_user.tenant_id,
-            "scan_id": result.scan_id,
-            "scan_type": "text",
-            "severity": result.severity.value,
-            "risk_score": result.risk_score,
-            "entity_count": result.total_entities,
-            "latency_ms": result.scan_duration_ms,
-            "status": "success",
-        })
+        logger.info(
+            "Text scan completed",
+            extra={
+                "user_id": current_user.id,
+                "tenant_id": current_user.tenant_id,
+                "scan_id": result.scan_id,
+                "scan_type": "text",
+                "severity": result.severity.value,
+                "risk_score": result.risk_score,
+                "entity_count": result.total_entities,
+                "latency_ms": result.scan_duration_ms,
+                "status": "success",
+            },
+        )
         return result
     except HTTPException:
         raise
@@ -84,12 +89,16 @@ async def scan_text(
             risk_score=0.0,
             entities=[],
         )
-        logger.error("Text scan failed", extra={
-            "user_id": current_user.id,
-            "scan_type": "text",
-            "status": "error",
-            "endpoint": "/api/v1/scan/text",
-        }, exc_info=True)
+        logger.error(
+            "Text scan failed",
+            extra={
+                "user_id": current_user.id,
+                "scan_type": "text",
+                "status": "error",
+                "endpoint": "/api/v1/scan/text",
+            },
+            exc_info=True,
+        )
         raise
 
 
@@ -117,7 +126,9 @@ async def scan_file(
             filename=req.filename,
             input_preview=req.filename,
         )
-        await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
+        await create_alert_if_needed(
+            db=db, user=current_user, scan_record=record, scan_response=result
+        )
         record_scan(
             scan_type="file",
             severity=result.severity.value,
@@ -126,17 +137,20 @@ async def scan_file(
             risk_score=result.risk_score,
             entities=result.entities,
         )
-        logger.info("File scan completed", extra={
-            "user_id": current_user.id,
-            "tenant_id": current_user.tenant_id,
-            "scan_id": result.scan_id,
-            "scan_type": "file",
-            "severity": result.severity.value,
-            "risk_score": result.risk_score,
-            "entity_count": result.total_entities,
-            "latency_ms": result.scan_duration_ms,
-            "status": "success",
-        })
+        logger.info(
+            "File scan completed",
+            extra={
+                "user_id": current_user.id,
+                "tenant_id": current_user.tenant_id,
+                "scan_id": result.scan_id,
+                "scan_type": "file",
+                "severity": result.severity.value,
+                "risk_score": result.risk_score,
+                "entity_count": result.total_entities,
+                "latency_ms": result.scan_duration_ms,
+                "status": "success",
+            },
+        )
         return result
     except HTTPException:
         raise
@@ -149,12 +163,16 @@ async def scan_file(
             risk_score=0.0,
             entities=[],
         )
-        logger.error("File scan failed", extra={
-            "user_id": current_user.id,
-            "scan_type": "file",
-            "status": "error",
-            "endpoint": "/api/v1/scan/file",
-        }, exc_info=True)
+        logger.error(
+            "File scan failed",
+            extra={
+                "user_id": current_user.id,
+                "scan_type": "file",
+                "status": "error",
+                "endpoint": "/api/v1/scan/file",
+            },
+            exc_info=True,
+        )
         raise
 
 
@@ -176,7 +194,9 @@ async def scan_network(
             input_preview=req.payload[:200],
             source_ip=req.source_ip,
         )
-        await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
+        await create_alert_if_needed(
+            db=db, user=current_user, scan_record=record, scan_response=result
+        )
         record_scan(
             scan_type="network",
             severity=result.severity.value,
@@ -185,17 +205,20 @@ async def scan_network(
             risk_score=result.risk_score,
             entities=result.entities,
         )
-        logger.info("Network scan completed", extra={
-            "user_id": current_user.id,
-            "tenant_id": current_user.tenant_id,
-            "scan_id": result.scan_id,
-            "scan_type": "network",
-            "severity": result.severity.value,
-            "risk_score": result.risk_score,
-            "entity_count": result.total_entities,
-            "latency_ms": result.scan_duration_ms,
-            "status": "success",
-        })
+        logger.info(
+            "Network scan completed",
+            extra={
+                "user_id": current_user.id,
+                "tenant_id": current_user.tenant_id,
+                "scan_id": result.scan_id,
+                "scan_type": "network",
+                "severity": result.severity.value,
+                "risk_score": result.risk_score,
+                "entity_count": result.total_entities,
+                "latency_ms": result.scan_duration_ms,
+                "status": "success",
+            },
+        )
         return result
     except HTTPException:
         raise
@@ -208,12 +231,16 @@ async def scan_network(
             risk_score=0.0,
             entities=[],
         )
-        logger.error("Network scan failed", extra={
-            "user_id": current_user.id,
-            "scan_type": "network",
-            "status": "error",
-            "endpoint": "/api/v1/scan/network",
-        }, exc_info=True)
+        logger.error(
+            "Network scan failed",
+            extra={
+                "user_id": current_user.id,
+                "scan_type": "network",
+                "status": "error",
+                "endpoint": "/api/v1/scan/network",
+            },
+            exc_info=True,
+        )
         raise
 
 

@@ -37,10 +37,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Configure MLflow (non-fatal if server is unreachable)
     setup_mlflow()
 
-    logger.info("Application started", extra={
-        "status": "startup",
-        "version": "0.5.0",
-    })
+    logger.info(
+        "Application started",
+        extra={
+            "status": "startup",
+            "version": "0.5.0",
+        },
+    )
 
     print(
         "\n"
@@ -86,13 +89,16 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         start = time_module.time()
         response = await call_next(request)
         latency_ms = round((time_module.time() - start) * 1000, 1)
-        logger.info("HTTP request", extra={
-            "endpoint": request.url.path,
-            "method": request.method,
-            "status": response.status_code,
-            "latency_ms": latency_ms,
-            "request_id": request_id,
-        })
+        logger.info(
+            "HTTP request",
+            extra={
+                "endpoint": request.url.path,
+                "method": request.method,
+                "status": response.status_code,
+                "latency_ms": latency_ms,
+                "request_id": request_id,
+            },
+        )
         return response
 
 
@@ -101,8 +107,8 @@ app.add_middleware(RequestLoggingMiddleware)
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
-app.include_router(health.router)                        # /health
-app.include_router(metrics_router.router)                # /metrics
-app.include_router(auth.router,  prefix="/api/v1")      # /api/v1/auth/…
-app.include_router(scan.router,  prefix="/api/v1")      # /api/v1/scan/…
-app.include_router(alert.router, prefix="/api/v1")      # /api/v1/alerts/…
+app.include_router(health.router)  # /health
+app.include_router(metrics_router.router)  # /metrics
+app.include_router(auth.router, prefix="/api/v1")  # /api/v1/auth/…
+app.include_router(scan.router, prefix="/api/v1")  # /api/v1/scan/…
+app.include_router(alert.router, prefix="/api/v1")  # /api/v1/alerts/…
