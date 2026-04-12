@@ -73,6 +73,8 @@ async def scan_text(
             "status": "success",
         })
         return result
+    except HTTPException:
+        raise
     except Exception:
         record_scan(
             scan_type="text",
@@ -195,6 +197,8 @@ async def scan_network(
             "status": "success",
         })
         return result
+    except HTTPException:
+        raise
     except Exception:
         record_scan(
             scan_type="network",
