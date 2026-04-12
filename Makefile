@@ -4,7 +4,10 @@
 # =============================================================================
 
 .PHONY: up down build logs logs-backend migrate shell-backend shell-db \
-        reset prod-up prod-down help
+        reset prod-up prod-down \
+        mlflow grafana prometheus \
+        logs-mlflow logs-prometheus logs-grafana \
+        monitoring-up monitoring-down help
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -22,6 +25,14 @@ help:
 	@echo "  make reset          Full reset: stop, delete volumes, rebuild"
 	@echo "  make prod-up        Start production stack"
 	@echo "  make prod-down      Stop production stack"
+	@echo "  make monitoring-up  Start MLflow, Prometheus, Grafana"
+	@echo "  make monitoring-down Stop MLflow, Prometheus, Grafana"
+	@echo "  make mlflow         Open MLflow UI (http://localhost:5001)"
+	@echo "  make prometheus     Open Prometheus UI (http://localhost:9090)"
+	@echo "  make grafana        Open Grafana UI (http://localhost:3001)"
+	@echo "  make logs-mlflow    Follow MLflow logs"
+	@echo "  make logs-prometheus Follow Prometheus logs"
+	@echo "  make logs-grafana   Follow Grafana logs"
 	@echo "  ────────────────────────────────────────────────────────────"
 	@echo ""
 
@@ -62,3 +73,35 @@ prod-up:
 
 prod-down:
 	docker-compose -f docker-compose.prod.yml down
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+monitoring-up:
+	docker-compose up -d mlflow prometheus grafana
+
+monitoring-down:
+	docker-compose stop mlflow prometheus grafana
+
+mlflow:
+	@echo "Opening MLflow at http://localhost:5001"
+	open http://localhost:5001 2>/dev/null || \
+	  xdg-open http://localhost:5001
+
+grafana:
+	@echo "Opening Grafana at http://localhost:3001"
+	open http://localhost:3001 2>/dev/null || \
+	  xdg-open http://localhost:3001
+
+prometheus:
+	@echo "Opening Prometheus at http://localhost:9090"
+	open http://localhost:9090 2>/dev/null || \
+	  xdg-open http://localhost:9090
+
+logs-mlflow:
+	docker-compose logs -f mlflow
+
+logs-prometheus:
+	docker-compose logs -f prometheus
+
+logs-grafana:
+	docker-compose logs -f grafana
+

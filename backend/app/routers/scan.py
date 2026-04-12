@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.database import get_db
 from ..db.models import ScanRecord, User
 from ..dependencies import check_plan_limit, get_current_user
+from ..mlops.logger import get_logger
+from ..mlops.metrics import record_scan
 from ..models.schemas import (
     PLAN_LIMITS,
     ScanFileRequest,
@@ -24,6 +27,8 @@ from ..services import scanner as _scanner
 
 router = APIRouter(prefix="/scan", tags=["scan"])
 
+logger = get_logger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Scan endpoints
@@ -37,16 +42,55 @@ async def scan_text(
     db: AsyncSession = Depends(get_db),
 ) -> ScanResponse:
     """Scan plain text for sensitive data and persist the result."""
-    result = _scanner.scan_text(req)
-    record = await save_scan(
-        db=db,
-        user=current_user,
-        scan_response=result,
-        scan_type="text",
-        input_preview=req.text,
-    )
-    await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
-    return result
+    start = time.perf_counter()
+    try:
+        result = _scanner.scan_text(req)
+        record = await save_scan(
+            db=db,
+            user=current_user,
+            scan_response=result,
+            scan_type="text",
+            input_preview=req.text,
+        )
+        await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
+        record_scan(
+            scan_type="text",
+            severity=result.severity.value,
+            status="success",
+            latency_seconds=time.perf_counter() - start,
+            risk_score=result.risk_score,
+            entities=result.entities,
+        )
+        logger.info("Text scan completed", extra={
+            "user_id": current_user.id,
+            "tenant_id": current_user.tenant_id,
+            "scan_id": result.scan_id,
+            "scan_type": "text",
+            "severity": result.severity.value,
+            "risk_score": result.risk_score,
+            "entity_count": result.total_entities,
+            "latency_ms": result.scan_duration_ms,
+            "status": "success",
+        })
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        record_scan(
+            scan_type="text",
+            severity="UNKNOWN",
+            status="error",
+            latency_seconds=time.perf_counter() - start,
+            risk_score=0.0,
+            entities=[],
+        )
+        logger.error("Text scan failed", extra={
+            "user_id": current_user.id,
+            "scan_type": "text",
+            "status": "error",
+            "endpoint": "/api/v1/scan/text",
+        }, exc_info=True)
+        raise
 
 
 @router.post("/file", response_model=ScanResponse, status_code=status.HTTP_200_OK)
@@ -56,23 +100,62 @@ async def scan_file(
     db: AsyncSession = Depends(get_db),
 ) -> ScanResponse:
     """Decode a base64-encoded file and scan its contents for sensitive data."""
+    start = time.perf_counter()
     try:
-        result = _scanner.scan_file(req)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
-    record = await save_scan(
-        db=db,
-        user=current_user,
-        scan_response=result,
-        scan_type="file",
-        filename=req.filename,
-        input_preview=req.filename,
-    )
-    await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
-    return result
+        try:
+            result = _scanner.scan_file(req)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        record = await save_scan(
+            db=db,
+            user=current_user,
+            scan_response=result,
+            scan_type="file",
+            filename=req.filename,
+            input_preview=req.filename,
+        )
+        await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
+        record_scan(
+            scan_type="file",
+            severity=result.severity.value,
+            status="success",
+            latency_seconds=time.perf_counter() - start,
+            risk_score=result.risk_score,
+            entities=result.entities,
+        )
+        logger.info("File scan completed", extra={
+            "user_id": current_user.id,
+            "tenant_id": current_user.tenant_id,
+            "scan_id": result.scan_id,
+            "scan_type": "file",
+            "severity": result.severity.value,
+            "risk_score": result.risk_score,
+            "entity_count": result.total_entities,
+            "latency_ms": result.scan_duration_ms,
+            "status": "success",
+        })
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        record_scan(
+            scan_type="file",
+            severity="UNKNOWN",
+            status="error",
+            latency_seconds=time.perf_counter() - start,
+            risk_score=0.0,
+            entities=[],
+        )
+        logger.error("File scan failed", extra={
+            "user_id": current_user.id,
+            "scan_type": "file",
+            "status": "error",
+            "endpoint": "/api/v1/scan/file",
+        }, exc_info=True)
+        raise
 
 
 @router.post("/network", response_model=ScanResponse, status_code=status.HTTP_200_OK)
@@ -82,17 +165,56 @@ async def scan_network(
     db: AsyncSession = Depends(get_db),
 ) -> ScanResponse:
     """Scan a network payload for sensitive data."""
-    result = _scanner.scan_network(req)
-    record = await save_scan(
-        db=db,
-        user=current_user,
-        scan_response=result,
-        scan_type="network",
-        input_preview=req.payload[:200],
-        source_ip=req.source_ip,
-    )
-    await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
-    return result
+    start = time.perf_counter()
+    try:
+        result = _scanner.scan_network(req)
+        record = await save_scan(
+            db=db,
+            user=current_user,
+            scan_response=result,
+            scan_type="network",
+            input_preview=req.payload[:200],
+            source_ip=req.source_ip,
+        )
+        await create_alert_if_needed(db=db, user=current_user, scan_record=record, scan_response=result)
+        record_scan(
+            scan_type="network",
+            severity=result.severity.value,
+            status="success",
+            latency_seconds=time.perf_counter() - start,
+            risk_score=result.risk_score,
+            entities=result.entities,
+        )
+        logger.info("Network scan completed", extra={
+            "user_id": current_user.id,
+            "tenant_id": current_user.tenant_id,
+            "scan_id": result.scan_id,
+            "scan_type": "network",
+            "severity": result.severity.value,
+            "risk_score": result.risk_score,
+            "entity_count": result.total_entities,
+            "latency_ms": result.scan_duration_ms,
+            "status": "success",
+        })
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        record_scan(
+            scan_type="network",
+            severity="UNKNOWN",
+            status="error",
+            latency_seconds=time.perf_counter() - start,
+            risk_score=0.0,
+            entities=[],
+        )
+        logger.error("Network scan failed", extra={
+            "user_id": current_user.id,
+            "scan_type": "network",
+            "status": "error",
+            "endpoint": "/api/v1/scan/network",
+        }, exc_info=True)
+        raise
 
 
 # ---------------------------------------------------------------------------

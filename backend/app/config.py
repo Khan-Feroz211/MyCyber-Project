@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-this-in-production"
     jwt_expire_hours: int = 24
 
+    # MLflow
+    mlflow_tracking_uri: str = "http://mlflow:5001"
+
     class Config:
         env_file = ".env"
 

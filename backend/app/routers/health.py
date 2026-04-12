@@ -16,7 +16,7 @@ _START_TIME: float = time.time()
 
 @router.get("/health")
 async def health(db: AsyncSession = Depends(get_db)) -> dict:
-    """Return service health information including DB connectivity."""
+    """Return service health information including DB connectivity, MLflow, and metrics status."""
     db_status = "ok"
     try:
         await db.execute(text("SELECT 1"))
@@ -29,8 +29,10 @@ async def health(db: AsyncSession = Depends(get_db)) -> dict:
     return {
         "status": overall,
         "uptime_seconds": uptime,
-        "version": "0.3.0",
+        "version": "0.5.0",
         "scanners_loaded": SCANNER_NAMES,
         "database": db_status,
         "ner_model": _model_name,
+        "mlflow_tracking": "enabled",
+        "metrics_endpoint": "/metrics",
     }
