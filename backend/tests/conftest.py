@@ -51,7 +51,9 @@ TestSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 # App imports (after env vars are set)
 # ---------------------------------------------------------------------------
 from app.db.database import Base, get_db  # noqa: E402
+from app.db.models import User  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services.auth import hash_password  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -132,3 +134,41 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+@pytest_asyncio.fixture
+async def registered_user(db_session: AsyncSession) -> User:
+    """Insert a free-plan test user directly into the DB and return it."""
+    user = User(
+        email="test@mycyber.com",
+        hashed_password=hash_password("password123"),
+        full_name="Test User",
+        tenant_id="test-tenant-001",
+        plan="free",
+        scan_count_month=0,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def pro_user_headers(client: AsyncClient, db_session: AsyncSession) -> dict:
+    """Create a pro-plan user and return its Authorization headers."""
+    user = User(
+        email="pro@mycyber.com",
+        hashed_password=hash_password("password123"),
+        full_name="Pro User",
+        tenant_id="pro-tenant-001",
+        plan="pro",
+        scan_count_month=0,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    resp = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "pro@mycyber.com", "password": "password123"},
+    )
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

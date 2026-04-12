@@ -1,0 +1,7 @@
+[bandit]
+exclude_dirs = tests,venv,.venv,alembic
+skips = B101,B601
+targets = app
+recursive = true
+severity-level = medium
+confidence-level = medium
