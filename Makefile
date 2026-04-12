@@ -7,7 +7,9 @@
         reset prod-up prod-down \
         mlflow grafana prometheus \
         logs-mlflow logs-prometheus logs-grafana \
-        monitoring-up monitoring-down help
+        monitoring-up monitoring-down \
+        lint lint-fix security test test-cov ci-local \
+        help
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -33,6 +35,13 @@ help:
 	@echo "  make logs-mlflow    Follow MLflow logs"
 	@echo "  make logs-prometheus Follow Prometheus logs"
 	@echo "  make logs-grafana   Follow Grafana logs"
+	@echo "  ────────────────────────────────────────────────────────────"
+	@echo "  make lint           Ruff + Black format check"
+	@echo "  make lint-fix       Auto-fix ruff + black"
+	@echo "  make security       Bandit SAST scan"
+	@echo "  make test           Run pytest"
+	@echo "  make test-cov       Run pytest with coverage (≥60%)"
+	@echo "  make ci-local       Run full local CI simulation"
 	@echo "  ────────────────────────────────────────────────────────────"
 	@echo ""
 
@@ -104,4 +113,31 @@ logs-prometheus:
 
 logs-grafana:
 	docker-compose logs -f grafana
+
+# ── Local CI / Dev tooling ────────────────────────────────────────────────────
+lint:
+	cd backend && ruff check app tests
+	cd backend && black --check app tests
+
+lint-fix:
+	cd backend && ruff check app tests --fix
+	cd backend && black app tests
+
+security:
+	cd backend && bandit -r app -c .bandit
+
+test:
+	cd backend && pytest tests/ -v
+
+test-cov:
+	cd backend && pytest tests/ -v \
+	  --cov=app \
+	  --cov-report=term-missing \
+	  --cov-fail-under=60
+
+ci-local:
+	make lint
+	make security
+	make test-cov
+	@echo "All CI checks passed locally"
 
