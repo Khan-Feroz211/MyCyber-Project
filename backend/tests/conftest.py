@@ -141,7 +141,7 @@ async def registered_user(db_session: AsyncSession) -> User:
     """Insert a free-plan test user directly into the DB and return it."""
     user = User(
         email="test@mycyber.com",
-        hashed_password=hash_password("password123"),
+        hashed_password=hash_password("password123"),  # noqa: S106 — test-only credential
         full_name="Test User",
         tenant_id="test-tenant-001",
         plan="free",
@@ -153,19 +153,37 @@ async def registered_user(db_session: AsyncSession) -> User:
     return user
 
 
+async def _create_user(
+    session: AsyncSession,
+    *,
+    email: str,
+    plan: str,
+    tenant_id: str,
+    full_name: str,
+) -> None:
+    """Insert a test user with a known password into *session*."""
+    user = User(
+        email=email,
+        hashed_password=hash_password("password123"),  # noqa: S106 — test-only credential
+        full_name=full_name,
+        tenant_id=tenant_id,
+        plan=plan,
+        scan_count_month=0,
+    )
+    session.add(user)
+    await session.commit()
+
+
 @pytest_asyncio.fixture
 async def pro_user_headers(client: AsyncClient, db_session: AsyncSession) -> dict:
     """Create a pro-plan user and return its Authorization headers."""
-    user = User(
+    await _create_user(
+        db_session,
         email="pro@mycyber.com",
-        hashed_password=hash_password("password123"),
-        full_name="Pro User",
-        tenant_id="pro-tenant-001",
         plan="pro",
-        scan_count_month=0,
+        tenant_id="pro-tenant-001",
+        full_name="Pro User",
     )
-    db_session.add(user)
-    await db_session.commit()
     resp = await client.post(
         "/api/v1/auth/login",
         data={"username": "pro@mycyber.com", "password": "password123"},
