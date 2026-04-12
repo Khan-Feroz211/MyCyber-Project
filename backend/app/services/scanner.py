@@ -29,6 +29,7 @@ from ..models.schemas import (
     ScanTextRequest,
     SeverityLevel,
 )
+from . import ner_model as _ner_model
 
 _logger = logging.getLogger(__name__)
 
@@ -89,6 +90,11 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         40,
     ),
     (
+        re.compile(r"\b\d{5}-\d{7}-\d\b"),
+        EntityType.CNIC,
+        60,
+    ),
+    (
         re.compile(r"\b\d{8,17}\b"),
         EntityType.BANK_ACCOUNT,
         30,
@@ -126,7 +132,7 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
 ]
 
 # Entities that immediately push severity to CRITICAL
-_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD}
+_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD, EntityType.CNIC}
 
 # Entities that push severity to at least HIGH
 _HIGH_TYPES = {
@@ -138,9 +144,8 @@ _HIGH_TYPES = {
 }
 
 # ---------------------------------------------------------------------------
-# NER pipeline (optional — populated by load_ner_model)
+# NER state (pipeline lives in ner_model module; these track load status)
 # ---------------------------------------------------------------------------
-_ner_pipeline = None
 _model_loaded: bool = False
 _model_name: str = "dslim/bert-base-NER"
 _use_transformer: bool = True
@@ -159,12 +164,12 @@ SCANNER_NAMES: List[str] = ["text", "file", "network", "ner"]
 
 def load_ner_model() -> None:
     """Load the HuggingFace NER pipeline (synchronous — run via asyncio.to_thread)."""
-    global _ner_pipeline, _model_loaded, _use_transformer
+    global _model_loaded, _use_transformer
 
     try:
         from transformers import pipeline  # type: ignore[import]
 
-        _ner_pipeline = pipeline(
+        _ner_model._pipeline = pipeline(
             "ner",
             model=_model_name,
             aggregation_strategy="simple",
@@ -230,30 +235,22 @@ def _regex_scan(text: str) -> List[DetectedEntity]:
 
 
 def _ner_scan(text: str) -> List[DetectedEntity]:
-    """Run transformer NER pipeline over *text* and return additional entities."""
-    if _ner_pipeline is None:
-        return []
+    """Run transformer NER via ner_model.run_ner and return additional entities."""
     entities: List[DetectedEntity] = []
-    try:
-        results = _ner_pipeline(text[:512])  # BERT-family models have a 512-token limit
-        for item in results:
-            label = item.get("entity_group", item.get("entity", "MISC")).upper()
-            entity_type = _NER_LABEL_MAP.get(label, EntityType.CUSTOM)
-            score: float = float(item.get("score", 0.0))
-            if score < 0.85:
-                continue
-            entities.append(
-                DetectedEntity(
-                    entity_type=entity_type,
-                    value=item.get("word", ""),
-                    confidence=round(score, 4),
-                    start_pos=item.get("start"),
-                    end_pos=item.get("end"),
-                    context=None,
-                )
+    for item in _ner_model.run_ner(text):
+        label = item.get("entity_group", item.get("entity", "MISC")).upper()
+        entity_type = _NER_LABEL_MAP.get(label, EntityType.CUSTOM)
+        score: float = float(item.get("score", 0.0))
+        entities.append(
+            DetectedEntity(
+                entity_type=entity_type,
+                value=item.get("word", ""),
+                confidence=round(score, 4),
+                start_pos=item.get("start"),
+                end_pos=item.get("end"),
+                context=None,
             )
-    except Exception as exc:  # pragma: no cover
-        _logger.warning("NER scan failed: %s", exc)
+        )
     return entities
 
 
@@ -325,7 +322,7 @@ def perform_scan(
         scan_id = str(uuid.uuid4())
 
     entities = _regex_scan(text)
-    if _model_loaded and _ner_pipeline is not None:
+    if _model_loaded and _ner_model._pipeline is not None:
         entities.extend(_ner_scan(text))
 
     # Deduplicate by (type, value) after combining regex + NER

@@ -33,6 +33,7 @@ class EntityType(str, Enum):
     PASSPORT = "PASSPORT"
     DRIVERS_LICENSE = "DRIVERS_LICENSE"
     BANK_ACCOUNT = "BANK_ACCOUNT"
+    CNIC = "CNIC"
     CUSTOM = "CUSTOM"
 
 
