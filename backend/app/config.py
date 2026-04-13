@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     # MLflow
     mlflow_tracking_uri: str = "http://mlflow:5001"
 
+    # Billing / Safepay
+    safepay_secret_key: str = ""
+    safepay_webhook_secret: str = ""
+    frontend_url: str = "http://localhost:5173"
+
     class Config:
         env_file = ".env"
 

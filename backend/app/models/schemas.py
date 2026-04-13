@@ -193,3 +193,95 @@ PLAN_LIMITS: dict[str, int] = {
     "pro": 10_000,
     "enterprise": 999_999,
 }
+
+PLAN_CONFIG: dict = {
+    "free": {
+        "name": "Free",
+        "scan_limit": 100,
+        "price_pkr": 0,
+        "features": [
+            "100 scans per month",
+            "Text + file scanning",
+            "Email alerts",
+            "7-day history",
+        ],
+    },
+    "pro": {
+        "name": "Pro",
+        "scan_limit": 10000,
+        "price_pkr": 4500,
+        "features": [
+            "10,000 scans per month",
+            "Text + file + network scanning",
+            "Real-time alerts",
+            "90-day history",
+            "API access",
+            "Priority support",
+        ],
+    },
+    "enterprise": {
+        "name": "Enterprise",
+        "scan_limit": 999999,
+        "price_pkr": 15000,
+        "features": [
+            "Unlimited scans",
+            "All scan types",
+            "Custom alert rules",
+            "1-year history",
+            "Dedicated support",
+            "White-label option",
+            "SLA guarantee",
+        ],
+    },
+}
+
+
+class SubscriptionOut(BaseModel):
+    sub_id: str
+    plan: str
+    status: str
+    scan_limit: int
+    price_pkr: int
+    current_period_end: datetime
+    scans_used: int
+    scans_remaining: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpgradeRequest(BaseModel):
+    plan: str = Field(..., pattern="^(pro|enterprise)$")
+    billing_cycle: str = Field(default="monthly", pattern="^(monthly|semester)$")
+
+
+class CheckoutResponse(BaseModel):
+    checkout_url: str
+    safepay_token: str
+    plan: str
+    amount_pkr: int
+    expires_at: datetime
+
+
+class WebhookPayload(BaseModel):
+    tracker: str
+    reference: str
+    status: str
+    amount: Optional[int] = None
+
+
+class UsageResponse(BaseModel):
+    plan: str
+    scans_used: int
+    scan_limit: int
+    scans_remaining: int
+    percent_used: float
+    resets_at: datetime
+    plan_config: dict
+
+
+class PlanCard(BaseModel):
+    plan_id: str
+    name: str
+    price_pkr: int
+    scan_limit: int
+    features: list[str]
+    is_current: bool
