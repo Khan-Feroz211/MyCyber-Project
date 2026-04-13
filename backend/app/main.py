@@ -15,7 +15,7 @@ from .config import get_settings
 from .db.database import init_db
 from .mlops.logger import get_logger
 from .mlops.tracker import setup_mlflow
-from .routers import alert, auth, health, metrics_router, scan
+from .routers import alert, auth, billing, health, metrics_router, scan
 from .services.scanner import load_ner_model
 
 logger = get_logger(__name__)
@@ -112,3 +112,4 @@ app.include_router(metrics_router.router)  # /metrics
 app.include_router(auth.router, prefix="/api/v1")  # /api/v1/auth/…
 app.include_router(scan.router, prefix="/api/v1")  # /api/v1/scan/…
 app.include_router(alert.router, prefix="/api/v1")  # /api/v1/alerts/…
+app.include_router(billing.router, prefix="/api/v1")  # /api/v1/billing/…

@@ -12,6 +12,7 @@ from ..db.database import get_db
 from ..db.models import User
 from ..dependencies import get_current_user
 from ..models.schemas import Token, UserCreate, UserOut
+from ..services import billing_service
 from ..services.auth import (
     create_access_token,
     hash_password,
@@ -82,3 +83,23 @@ async def login(
 async def me(current_user: User = Depends(get_current_user)) -> UserOut:
     """Return the profile of the currently authenticated user."""
     return UserOut.model_validate(current_user)
+
+
+@router.get("/me/full")
+async def me_full(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Return user profile, subscription, and usage in a single call.
+
+    Intended as the primary dashboard load endpoint so the frontend can
+    fetch everything it needs in one round-trip.
+    """
+    subscription = await billing_service.get_subscription_dict(db=db, user=current_user)
+    usage = await billing_service.get_usage(db=db, user=current_user)
+
+    return {
+        "user": UserOut.model_validate(current_user).model_dump(),
+        "subscription": subscription,
+        "usage": usage,
+    }

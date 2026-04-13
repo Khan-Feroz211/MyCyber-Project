@@ -34,6 +34,9 @@ class JSONFormatter(logging.Formatter):
         "endpoint",
         "request_id",
         "status",
+        "plan",
+        "amount_pkr",
+        "error",
     )
 
     def format(self, record: logging.LogRecord) -> str:
