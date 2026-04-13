@@ -9,9 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
-from ..db.models import Subscription, User
+from ..db.models import User
 from ..dependencies import get_current_user
-from ..models.schemas import PLAN_CONFIG, Token, UserCreate, UserOut
+from ..models.schemas import Token, UserCreate, UserOut
 from ..services import billing_service
 from ..services.auth import (
     create_access_token,
@@ -95,37 +95,7 @@ async def me_full(
     Intended as the primary dashboard load endpoint so the frontend can
     fetch everything it needs in one round-trip.
     """
-    sub_result = await db.execute(
-        select(Subscription).where(Subscription.user_id == current_user.id)
-    )
-    sub = sub_result.scalar_one_or_none()
-
-    if sub:
-        scans_remaining = max(0, sub.scan_limit - current_user.scan_count_month)
-        subscription: dict | None = {
-            "sub_id": sub.sub_id,
-            "plan": sub.plan,
-            "status": sub.status,
-            "scan_limit": sub.scan_limit,
-            "price_pkr": sub.price_pkr,
-            "current_period_end": sub.current_period_end,
-            "scans_used": current_user.scan_count_month,
-            "scans_remaining": scans_remaining,
-        }
-    else:
-        plan_cfg = PLAN_CONFIG.get(current_user.plan, PLAN_CONFIG["free"])
-        scans_remaining = max(0, plan_cfg["scan_limit"] - current_user.scan_count_month)
-        subscription = {
-            "sub_id": None,
-            "plan": current_user.plan,
-            "status": "active",
-            "scan_limit": plan_cfg["scan_limit"],
-            "price_pkr": plan_cfg["price_pkr"],
-            "current_period_end": None,
-            "scans_used": current_user.scan_count_month,
-            "scans_remaining": scans_remaining,
-        }
-
+    subscription = await billing_service.get_subscription_dict(db=db, user=current_user)
     usage = await billing_service.get_usage(db=db, user=current_user)
 
     return {

@@ -100,36 +100,7 @@ async def get_subscription(
     Free-plan users who have no Subscription record receive a synthetic
     response indicating their defaults.
     """
-    result = await db.execute(
-        select(Subscription).where(Subscription.user_id == current_user.id)
-    )
-    sub = result.scalar_one_or_none()
-
-    if sub:
-        scans_remaining = max(0, sub.scan_limit - current_user.scan_count_month)
-        return {
-            "sub_id": sub.sub_id,
-            "plan": sub.plan,
-            "status": sub.status,
-            "scan_limit": sub.scan_limit,
-            "price_pkr": sub.price_pkr,
-            "current_period_end": sub.current_period_end,
-            "scans_used": current_user.scan_count_month,
-            "scans_remaining": scans_remaining,
-        }
-
-    plan_cfg = PLAN_CONFIG.get(current_user.plan, PLAN_CONFIG["free"])
-    scans_remaining = max(0, plan_cfg["scan_limit"] - current_user.scan_count_month)
-    return {
-        "sub_id": None,
-        "plan": current_user.plan,
-        "status": "active",
-        "scan_limit": plan_cfg["scan_limit"],
-        "price_pkr": plan_cfg["price_pkr"],
-        "current_period_end": None,
-        "scans_used": current_user.scan_count_month,
-        "scans_remaining": scans_remaining,
-    }
+    return await billing_service.get_subscription_dict(db=db, user=current_user)
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +116,13 @@ async def upgrade_plan(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> CheckoutResponse:
-    """Initiate a plan upgrade. Returns a Safepay checkout URL to complete payment."""
+    """Initiate a plan upgrade.
+
+    Creates a Safepay checkout session and stores a pending Subscription
+    record with the returned token so the webhook handler can locate it
+    when the payment/succeeded event arrives.
+    Returns a Safepay checkout URL for the user to complete payment.
+    """
     if current_user.plan == body.plan:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -156,6 +133,14 @@ async def upgrade_plan(
         user=current_user,
         plan=body.plan,
         billing_cycle=body.billing_cycle,
+    )
+
+    await billing_service.create_pending_subscription(
+        db=db,
+        user=current_user,
+        plan=body.plan,
+        billing_cycle=body.billing_cycle,
+        safepay_token=checkout["safepay_token"],
     )
 
     expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -259,8 +244,11 @@ async def safepay_webhook(
 ) -> dict:
     """Receive and process Safepay payment webhooks.
 
-    Always returns HTTP 200 so Safepay does not retry. Errors are logged
-    internally without surfacing 5xx status codes.
+    Signature validation failures return HTTP 400 immediately (Safepay
+    will not retry these — they indicate a configuration or security
+    issue).  All other internal processing errors are caught, logged,
+    and responded to with HTTP 200 so Safepay does not schedule retries
+    for transient failures.
     """
     payload = await request.body()
     settings = get_settings()

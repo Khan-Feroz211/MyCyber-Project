@@ -246,6 +246,88 @@ async def get_usage(
     }
 
 
+async def get_subscription_dict(db, user: User) -> dict:
+    """Build a subscription info dict for the given user.
+
+    Used by both the billing and auth routers to ensure a consistent
+    response shape without duplicating query logic.
+    """
+    result = await db.execute(
+        select(Subscription).where(Subscription.user_id == user.id)
+    )
+    sub = result.scalar_one_or_none()
+
+    if sub:
+        scans_remaining = max(0, sub.scan_limit - user.scan_count_month)
+        return {
+            "sub_id": sub.sub_id,
+            "plan": sub.plan,
+            "status": sub.status,
+            "scan_limit": sub.scan_limit,
+            "price_pkr": sub.price_pkr,
+            "current_period_end": sub.current_period_end,
+            "scans_used": user.scan_count_month,
+            "scans_remaining": scans_remaining,
+        }
+
+    plan_cfg = PLAN_CONFIG.get(user.plan, PLAN_CONFIG["free"])
+    scans_remaining = max(0, plan_cfg["scan_limit"] - user.scan_count_month)
+    return {
+        "sub_id": None,
+        "plan": user.plan,
+        "status": "active",
+        "scan_limit": plan_cfg["scan_limit"],
+        "price_pkr": plan_cfg["price_pkr"],
+        "current_period_end": None,
+        "scans_used": user.scan_count_month,
+        "scans_remaining": scans_remaining,
+    }
+
+
+async def create_pending_subscription(
+    db,
+    user: User,
+    plan: str,
+    billing_cycle: str,
+    safepay_token: str,
+) -> Subscription:
+    """Create or update a Subscription in 'pending' status during checkout.
+
+    Stores the Safepay token so the webhook handler can locate the record
+    when a payment/succeeded event arrives.  The subscription is promoted
+    to 'active' by :func:`activate_subscription` inside the webhook.
+    """
+    plan_cfg = PLAN_CONFIG[plan]
+
+    existing = await db.execute(
+        select(Subscription).where(Subscription.user_id == user.id)
+    )
+    sub = existing.scalar_one_or_none()
+
+    if sub:
+        sub.plan = plan
+        sub.status = "pending"
+        sub.scan_limit = plan_cfg["scan_limit"]
+        sub.price_pkr = plan_cfg["price_pkr"]
+        sub.billing_cycle = billing_cycle
+        sub.safepay_token = safepay_token
+    else:
+        sub = Subscription(
+            user_id=user.id,
+            tenant_id=user.tenant_id,
+            plan=plan,
+            status="pending",
+            scan_limit=plan_cfg["scan_limit"],
+            price_pkr=plan_cfg["price_pkr"],
+            billing_cycle=billing_cycle,
+            safepay_token=safepay_token,
+        )
+        db.add(sub)
+
+    await db.flush()
+    return sub
+
+
 async def log_billing_event(
     db,
     user_id: int,
