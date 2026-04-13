@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.Column(
             "user_id",
             sa.Integer(),
-            sa.ForeignKey("users.id"),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column("tenant_id", sa.String(36), nullable=False),
