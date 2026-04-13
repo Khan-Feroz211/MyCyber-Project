@@ -232,7 +232,7 @@ async def billing_history(
 
 
 # ---------------------------------------------------------------------------
-# POST /billing/webhook  (no auth — called directly by Safepay)
+# POST /billing/webhook  (no auth -- called directly by Safepay)
 # ---------------------------------------------------------------------------
 
 
@@ -245,7 +245,7 @@ async def safepay_webhook(
     """Receive and process Safepay payment webhooks.
 
     Signature validation failures return HTTP 400 immediately (Safepay
-    will not retry these — they indicate a configuration or security
+    will not retry these -- they indicate a configuration or security
     issue).  All other internal processing errors are caught, logged,
     and responded to with HTTP 200 so Safepay does not schedule retries
     for transient failures.
@@ -324,6 +324,7 @@ async def _handle_payment_succeeded(db: AsyncSession, event_data: dict) -> dict:
         plan=plan,
         safepay_token=token,
         safepay_tracker=tracker,
+        amount_pkr=amount_pkr if amount_pkr else None,
     )
     await billing_service.log_billing_event(
         db=db,
@@ -335,7 +336,7 @@ async def _handle_payment_succeeded(db: AsyncSession, event_data: dict) -> dict:
         safepay_data=event_data,
     )
     logger.info(
-        "Payment succeeded — subscription activated",
+        "Payment succeeded -- subscription activated",
         extra={"user_id": user.id, "plan": plan, "amount_pkr": amount_pkr},
     )
     return {"status": "ok"}
@@ -365,7 +366,7 @@ async def _handle_payment_failed(db: AsyncSession, event_data: dict) -> dict:
     )
     await db.flush()
     logger.warning(
-        "Payment failed — subscription marked past_due",
+        "Payment failed -- subscription marked past_due",
         extra={"user_id": sub.user_id, "plan": sub.plan},
     )
     return {"status": "ok"}

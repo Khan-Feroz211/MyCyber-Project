@@ -63,7 +63,7 @@ async def create_checkout_session(
     price_pkr = plan_cfg["price_pkr"]
 
     if billing_cycle == "semester":
-        # 5-month billing for a 6-month period — one month free as a discount
+        # 5-month billing for a 6-month period -- one month free as a discount
         price_pkr = int(price_pkr * 5)
 
     order_id = f"MYCYBER-{user.id}-{uuid4().hex[:8].upper()}"
@@ -147,6 +147,7 @@ async def activate_subscription(
     plan: str,
     safepay_token: str,
     safepay_tracker: str,
+    amount_pkr: int | None = None,
 ) -> Subscription:
     """
     Creates or upgrades a Subscription record.
@@ -156,9 +157,14 @@ async def activate_subscription(
     Logs BillingEvent of type "subscription_created"
     or "plan_upgraded".
     Returns the Subscription record.
+
+    Pass amount_pkr to record the actual charged amount (e.g. for
+    semester billing where the charge differs from the monthly base
+    price).  Defaults to the plan's monthly base price when omitted.
     """
     now = datetime.now(timezone.utc)
     plan_cfg = PLAN_CONFIG[plan]
+    logged_amount = amount_pkr if amount_pkr is not None else plan_cfg["price_pkr"]
 
     existing = await db.execute(
         select(Subscription).where(Subscription.user_id == user.id)
@@ -199,7 +205,7 @@ async def activate_subscription(
         tenant_id=user.tenant_id,
         event_type=event_type,
         plan=plan,
-        amount_pkr=plan_cfg["price_pkr"],
+        amount_pkr=logged_amount,
     )
     db.add(event)
     await db.flush()
