@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import {
   Bell,
   Clock,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Search,
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/scan", icon: Search, label: "New Scan" },
   { to: "/history", icon: Clock, label: "Scan History" },
   { to: "/alerts", icon: Bell, label: "Alerts", badge: true },
+  { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

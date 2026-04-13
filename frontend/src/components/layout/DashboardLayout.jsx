@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   "/scan": "New Scan",
   "/history": "Scan History",
   "/alerts": "Alerts",
+  "/billing": "Billing",
   "/settings": "Settings",
 };
 

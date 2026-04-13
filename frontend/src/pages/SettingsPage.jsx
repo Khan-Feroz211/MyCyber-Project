@@ -1,50 +1,8 @@
 import React from "react";
-import { Key, Shield, Star, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CreditCard, Key } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/layout/DashboardLayout";
-
-const PLANS = [
-  {
-    key: "free",
-    label: "Free",
-    icon: <Shield className="h-5 w-5" />,
-    color: "border-gray-700",
-    highlightColor: "border-cyber-500",
-    price: "$0 / mo",
-    features: ["50 scans / month", "Text scan only", "Basic PII detection", "Community support"],
-  },
-  {
-    key: "pro",
-    label: "Pro",
-    icon: <Zap className="h-5 w-5" />,
-    color: "border-gray-700",
-    highlightColor: "border-cyber-500",
-    price: "$29 / mo",
-    features: [
-      "2,000 scans / month",
-      "Text, File & Network scans",
-      "AI-powered analysis",
-      "Priority support",
-      "API access",
-    ],
-  },
-  {
-    key: "enterprise",
-    label: "Enterprise",
-    icon: <Star className="h-5 w-5" />,
-    color: "border-gray-700",
-    highlightColor: "border-purple-500",
-    price: "Custom",
-    features: [
-      "Unlimited scans",
-      "All scan types",
-      "Custom AI models",
-      "Dedicated support",
-      "SSO / SAML",
-      "Multi-tenant",
-    ],
-  },
-];
 
 function PlanBadge({ plan }) {
   const label = (plan ?? "FREE").toUpperCase();
@@ -69,6 +27,7 @@ function usageColor(pct) {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const planLimit = user?.plan_limit ?? 50;
   const scanCountMonth = user?.scan_count_month ?? 0;
@@ -169,47 +128,22 @@ export default function SettingsPage() {
 
         {/* ── Plans ── */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-white mb-5">Plans</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS.map((plan) => {
-              const isCurrent = plan.key === currentPlan;
-              return (
-                <div
-                  key={plan.key}
-                  className={`rounded-xl border-2 p-5 flex flex-col gap-4 transition ${
-                    isCurrent ? plan.highlightColor : plan.color
-                  } bg-gray-800/50`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-white font-semibold">
-                      <span className="text-cyan-400">{plan.icon}</span>
-                      {plan.label}
-                    </div>
-                    {isCurrent && (
-                      <span className="text-xs text-cyan-400 font-medium">Current</span>
-                    )}
-                  </div>
-                  <p className="text-xl font-bold text-white tabular-nums">{plan.price}</p>
-                  <ul className="space-y-1.5 flex-1">
-                    {plan.features.map((feat) => (
-                      <li key={feat} className="text-xs text-gray-400 flex items-center gap-1.5">
-                        <span className="h-1 w-1 rounded-full bg-cyan-500 shrink-0" />
-                        {feat}
-                      </li>
-                    ))}
-                  </ul>
-                  {!isCurrent && (
-                    <button
-                      type="button"
-                      className="mt-auto w-full rounded-lg bg-cyber-600 hover:bg-cyber-700 text-white text-sm font-semibold py-2 transition"
-                    >
-                      Upgrade to {plan.label}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-semibold text-white">Plans &amp; Billing</h2>
+            <PlanBadge plan={user?.plan} />
           </div>
+          <p className="text-sm text-gray-400 mb-4">
+            Manage your subscription, view usage, and upgrade your plan from the
+            billing page.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/billing")}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 transition"
+          >
+            <CreditCard className="h-4 w-4" />
+            Manage billing
+          </button>
         </section>
       </div>
     </DashboardLayout>

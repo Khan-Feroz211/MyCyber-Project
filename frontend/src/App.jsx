@@ -18,6 +18,7 @@ import ScanPage from "./pages/ScanPage";
 import HistoryPage from "./pages/HistoryPage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
+import BillingPage from "./pages/BillingPage";
 
 /* ─── Private route guard ──────────────────────────────────────────── */
 /**
@@ -82,6 +83,14 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <AlertsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/billing"
+        element={
+          <PrivateRoute>
+            <BillingPage />
           </PrivateRoute>
         }
       />
