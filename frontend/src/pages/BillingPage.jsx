@@ -235,7 +235,7 @@ function PlansTab({ plans, subscription, onSwitchToUsage }) {
                 : "text-gray-400 hover:text-white hover:bg-gray-800"
             }`}
           >
-            Semester (5 months, save 17%)
+          Semester (6 months, save 17%)
           </button>
         </div>
       </div>
@@ -358,7 +358,7 @@ function PlansTab({ plans, subscription, onSwitchToUsage }) {
                   onClick={() => setUpgradeTarget(plan)}
                   className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 transition"
                 >
-                  Upgrade — PKR {fmtPKR(billingCycle === "semester" ? plan.price_pkr * 5 : plan.price_pkr)}/mo
+                  Upgrade — PKR {fmtPKR(billingCycle === "semester" ? plan.price_pkr * 5 : plan.price_pkr)}/{billingCycle === "semester" ? "6 mo" : "mo"}
                 </button>
               ) : (
                 <button
