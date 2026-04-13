@@ -194,6 +194,8 @@ PLAN_LIMITS: dict[str, int] = {
     "enterprise": 999_999,
 }
 
+UNLIMITED_SCANS: int = 999_999
+
 PLAN_CONFIG: dict = {
     "free": {
         "name": "Free",
@@ -221,7 +223,7 @@ PLAN_CONFIG: dict = {
     },
     "enterprise": {
         "name": "Enterprise",
-        "scan_limit": 999999,
+        "scan_limit": UNLIMITED_SCANS,
         "price_pkr": 15000,
         "features": [
             "Unlimited scans",

@@ -63,6 +63,7 @@ async def create_checkout_session(
     price_pkr = plan_cfg["price_pkr"]
 
     if billing_cycle == "semester":
+        # 5-month billing for a 6-month period — one month free as a discount
         price_pkr = int(price_pkr * 5)
 
     order_id = f"MYCYBER-{user.id}-{uuid4().hex[:8].upper()}"
@@ -89,7 +90,10 @@ async def create_checkout_session(
                 raise ValueError(data.get("message", "Safepay error"))
             token = data["data"]["token"]
             base_url = get_safepay_base_url()
-            checkout_url = f"{base_url}/checkout?env=sandbox&token={token}"
+            env_param = (
+                "production" if get_settings().app_env == "production" else "sandbox"
+            )
+            checkout_url = f"{base_url}/checkout?env={env_param}&token={token}"
             logger.info(
                 "Checkout created",
                 extra={
@@ -110,7 +114,7 @@ async def create_checkout_session(
     except Exception as e:
         logger.error(
             "Safepay checkout failed",
-            extra={"user_id": user.id},
+            extra={"user_id": user.id, "error": str(e)},
         )
         raise HTTPException(
             status_code=502,
