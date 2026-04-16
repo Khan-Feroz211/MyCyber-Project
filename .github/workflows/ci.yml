@@ -196,7 +196,6 @@ jobs:
     name: Container vulnerability scan
     runs-on: ubuntu-latest
     needs: [test-backend]
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
     steps:
@@ -230,7 +229,7 @@ jobs:
     name: Build and push Docker images
     runs-on: ubuntu-latest
     needs: [test-backend, lint-frontend, security-scan]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     permissions:
       contents: read
       packages: write
@@ -261,7 +260,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
@@ -280,7 +279,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
