@@ -13,6 +13,7 @@ from starlette.requests import Request
 
 from .config import get_settings
 from .db.database import init_db
+from .middleware.security import SecurityHeadersMiddleware
 from .mlops.logger import get_logger
 from .mlops.tracker import setup_mlflow
 from .routers import alert, auth, billing, health, metrics_router, scan
@@ -103,6 +104,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(RequestLoggingMiddleware)
+
+# ---------------------------------------------------------------------------
+# Security headers (production only)
+# ---------------------------------------------------------------------------
+if _settings.app_env == "production":
+    app.add_middleware(SecurityHeadersMiddleware)
 
 # ---------------------------------------------------------------------------
 # Routers
