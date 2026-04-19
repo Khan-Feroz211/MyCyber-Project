@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Auth / JWT
     jwt_secret: str = "change-this-in-production"
     jwt_expire_hours: int = 24
+    mfa_rollout_mode: str = "opt_in"  # off | opt_in | enforced
+    login_max_failures: int = 5
+    login_lock_minutes: int = 15
 
     # MLflow
     mlflow_tracking_uri: str = "http://mlflow:5001"

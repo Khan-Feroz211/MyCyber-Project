@@ -7,7 +7,11 @@ from ..db.database import get_db
 from ..db.models import User
 from ..dependencies import get_current_user
 from ..models.schemas import AcknowledgeRequest, AlertOut, AlertsResponse
-from ..services.alert_service import acknowledge_alert, get_alerts
+from ..services.alert_service import (
+    acknowledge_alert,
+    acknowledge_all_alerts,
+    get_alerts,
+)
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -55,3 +59,13 @@ async def alert_count(
         page_size=1,
     )
     return {"unacknowledged": response.unacknowledged}
+
+
+@router.post("/acknowledge-all")
+async def acknowledge_all(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Acknowledge all unacknowledged alerts for the current tenant."""
+    updated = await acknowledge_all_alerts(db=db, user=current_user)
+    return {"updated": updated}

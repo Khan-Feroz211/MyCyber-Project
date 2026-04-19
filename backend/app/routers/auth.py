@@ -1,25 +1,43 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import get_settings
 from ..db.database import get_db
 from ..db.models import User
 from ..dependencies import get_current_user
-from ..models.schemas import Token, UserCreate, UserOut
+from ..models.schemas import (
+    MFAVerifyRequest,
+    MFASetupResponse,
+    MFAStatusResponse,
+    Token,
+    UserCreate,
+    UserOut,
+)
 from ..services import billing_service
 from ..services.auth import (
     create_access_token,
     hash_password,
     verify_password,
 )
+from ..services.mfa import build_otpauth_uri, generate_totp_secret, verify_totp_code
+from ..services.security_audit import log_security_event
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+settings = get_settings()
+
+
+def _extract_client_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.client.host if request.client else None
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -48,14 +66,54 @@ async def register(
 
 @router.post("/login", response_model=Token)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
+    x_mfa_code: str | None = Header(default=None, alias="X-MFA-CODE"),
     db: AsyncSession = Depends(get_db),
 ) -> Token:
     """Authenticate with e-mail + password and return a JWT Bearer token."""
+    now = datetime.now(tz=timezone.utc)
+    client_ip = _extract_client_ip(request)
+    user_agent = request.headers.get("user-agent")
+
     result = await db.execute(select(User).where(User.email == form_data.username))
     user: User | None = result.scalars().first()
 
+    if user and user.locked_until and user.locked_until > now:
+        await log_security_event(
+            db,
+            event_type="login_blocked_locked_account",
+            severity="MEDIUM",
+            user=user,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            details={"locked_until": user.locked_until.isoformat()},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="Account is temporarily locked due to repeated failed sign-in attempts.",
+        )
+
     if user is None or not verify_password(form_data.password, user.hashed_password):
+        if user is not None:
+            user.failed_login_attempts += 1
+            if user.failed_login_attempts >= settings.login_max_failures:
+                user.locked_until = now + timedelta(minutes=settings.login_lock_minutes)
+            await db.flush()
+
+            await log_security_event(
+                db,
+                event_type="login_failed",
+                severity="MEDIUM",
+                user=user,
+                ip_address=client_ip,
+                user_agent=user_agent,
+                details={
+                    "failed_login_attempts": user.failed_login_attempts,
+                    "lock_threshold": settings.login_max_failures,
+                },
+            )
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
@@ -63,12 +121,85 @@ async def login(
         )
 
     if not user.is_active:
+        await log_security_event(
+            db,
+            event_type="login_blocked_inactive",
+            severity="LOW",
+            user=user,
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive.",
         )
 
+    mfa_required = settings.mfa_rollout_mode == "enforced" or (
+        settings.mfa_rollout_mode == "opt_in" and user.mfa_enabled
+    )
+    if mfa_required:
+        if not user.mfa_secret:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "MFA is required for this account but no authenticator setup is available. "
+                    "Contact an administrator."
+                ),
+            )
+
+        if not x_mfa_code:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "error": "mfa_required",
+                    "message": "Multi-factor code is required.",
+                    "mfa_required": True,
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if not verify_totp_code(user.mfa_secret, x_mfa_code):
+            await log_security_event(
+                db,
+                event_type="mfa_failed",
+                severity="HIGH",
+                user=user,
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid multi-factor code.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    previous_ip = user.last_login_ip
+    suspicious_login = bool(previous_ip and client_ip and previous_ip != client_ip)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+
     user.last_login = datetime.now(tz=timezone.utc)
+    user.last_login_ip = client_ip
+
+    if suspicious_login:
+        await log_security_event(
+            db,
+            event_type="suspicious_login_new_ip",
+            severity="HIGH",
+            user=user,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            details={"previous_ip": previous_ip, "current_ip": client_ip},
+        )
+
+    await log_security_event(
+        db,
+        event_type="login_success",
+        severity="INFO",
+        user=user,
+        ip_address=client_ip,
+        user_agent=user_agent,
+    )
     await db.flush()
 
     access_token = create_access_token(user.id, user.email, user.tenant_id)
@@ -103,3 +234,112 @@ async def me_full(
         "subscription": subscription,
         "usage": usage,
     }
+
+
+@router.get("/mfa/status", response_model=MFAStatusResponse)
+async def mfa_status(current_user: User = Depends(get_current_user)) -> MFAStatusResponse:
+    return MFAStatusResponse(
+        enabled=bool(current_user.mfa_enabled),
+        rollout_mode=settings.mfa_rollout_mode,
+    )
+
+
+@router.post("/mfa/setup", response_model=MFASetupResponse)
+async def mfa_setup(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MFASetupResponse:
+    secret = generate_totp_secret()
+    current_user.mfa_secret = secret
+    await db.flush()
+
+    issuer = "MyCyber"
+    account_name = current_user.email
+    provisioning_uri = build_otpauth_uri(secret=secret, account_name=account_name, issuer=issuer)
+
+    await log_security_event(
+        db,
+        event_type="mfa_setup_started",
+        severity="INFO",
+        user=current_user,
+    )
+
+    return MFASetupResponse(
+        secret=secret,
+        provisioning_uri=provisioning_uri,
+        issuer=issuer,
+        account_name=account_name,
+    )
+
+
+@router.post("/mfa/verify", response_model=MFAStatusResponse)
+async def mfa_verify(
+    payload: MFAVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MFAStatusResponse:
+    if not current_user.mfa_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA setup was not initialized for this account.",
+        )
+
+    if not verify_totp_code(current_user.mfa_secret, payload.code):
+        await log_security_event(
+            db,
+            event_type="mfa_verify_failed",
+            severity="MEDIUM",
+            user=current_user,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid multi-factor code.",
+        )
+
+    current_user.mfa_enabled = True
+    await log_security_event(
+        db,
+        event_type="mfa_enabled",
+        severity="INFO",
+        user=current_user,
+    )
+    await db.flush()
+
+    return MFAStatusResponse(
+        enabled=True,
+        rollout_mode=settings.mfa_rollout_mode,
+    )
+
+
+@router.post("/mfa/disable", response_model=MFAStatusResponse)
+async def mfa_disable(
+    payload: MFAVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MFAStatusResponse:
+    if not current_user.mfa_secret or not current_user.mfa_enabled:
+        return MFAStatusResponse(
+            enabled=False,
+            rollout_mode=settings.mfa_rollout_mode,
+        )
+
+    if not verify_totp_code(current_user.mfa_secret, payload.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid multi-factor code.",
+        )
+
+    current_user.mfa_enabled = False
+    current_user.mfa_secret = None
+    await log_security_event(
+        db,
+        event_type="mfa_disabled",
+        severity="MEDIUM",
+        user=current_user,
+    )
+    await db.flush()
+
+    return MFAStatusResponse(
+        enabled=False,
+        rollout_mode=settings.mfa_rollout_mode,
+    )

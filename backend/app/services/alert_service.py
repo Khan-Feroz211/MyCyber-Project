@@ -106,3 +106,25 @@ async def acknowledge_alert(
     alert.acknowledged_at = datetime.now(tz=timezone.utc)
     await db.flush()
     return alert
+
+
+async def acknowledge_all_alerts(db: AsyncSession, user: User) -> int:
+    """Acknowledge all unacknowledged alerts for the user's tenant.
+
+    Returns the number of alerts updated.
+    """
+    result = await db.execute(
+        select(Alert).where(
+            Alert.tenant_id == user.tenant_id,
+            Alert.is_acknowledged == False,  # noqa: E712
+        )
+    )
+    alerts = result.scalars().all()
+
+    now = datetime.now(tz=timezone.utc)
+    for alert in alerts:
+        alert.is_acknowledged = True
+        alert.acknowledged_at = now
+
+    await db.flush()
+    return len(alerts)

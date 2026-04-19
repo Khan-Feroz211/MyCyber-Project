@@ -15,6 +15,7 @@ const PAGE_TITLES = {
   "/alerts": "Alerts",
   "/billing": "Billing",
   "/settings": "Settings",
+  "/admin/incidents": "Security Incidents",
 };
 
 function getPageTitle(pathname) {

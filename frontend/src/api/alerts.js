@@ -31,4 +31,11 @@ export const alertApi = {
   acknowledge(alertId) {
     return client.post("/api/v1/alerts/acknowledge", { alert_id: alertId });
   },
+
+  /**
+   * Acknowledge all unacknowledged alerts for the current tenant.
+   */
+  acknowledgeAll() {
+    return client.post("/api/v1/alerts/acknowledge-all");
+  },
 };

@@ -9,6 +9,7 @@ import {
   Search,
   Settings,
   Shield,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { alertApi } from "../../api/alerts";
@@ -21,6 +22,10 @@ const NAV_ITEMS = [
   { to: "/alerts", icon: Bell, label: "Alerts", badge: true },
   { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/settings", icon: Settings, label: "Settings" },
+];
+
+const ADMIN_NAV_ITEMS = [
+  { to: "/admin/incidents", icon: ShieldAlert, label: "Incidents" },
 ];
 
 /** Derive up-to-two initials from an email address. */
@@ -61,6 +66,9 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   const email = user?.email ?? localStorage.getItem("mycyber_email") ?? "";
   const initials = getInitials(email);
+  const navItems = user?.is_admin
+    ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS]
+    : NAV_ITEMS;
 
   const sidebarContent = (
     <div className="flex flex-col h-full py-5 px-3">
@@ -79,7 +87,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1">
-        {NAV_ITEMS.map(({ to, icon: Icon, label, badge }) => (
+        {navItems.map(({ to, icon: Icon, label, badge }) => (
           <NavLink
             key={to}
             to={to}

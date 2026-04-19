@@ -19,6 +19,7 @@ import HistoryPage from "./pages/HistoryPage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
 import BillingPage from "./pages/BillingPage";
+import AdminIncidentsPage from "./pages/AdminIncidentsPage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import TermsOfService from "./pages/legal/TermsOfService";
@@ -85,6 +86,24 @@ function ProtectedAppRoute({ children }) {
   }
 
   return <PrivateRoute>{children}</PrivateRoute>;
+}
+
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (!user?.is_admin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <ProtectedAppRoute>{children}</ProtectedAppRoute>;
 }
 
 function HomeRoute() {
@@ -200,6 +219,14 @@ function AppRoutes() {
           <ProtectedAppRoute>
             <SettingsPage />
           </ProtectedAppRoute>
+        }
+      />
+      <Route
+        path="/admin/incidents"
+        element={
+          <AdminRoute>
+            <AdminIncidentsPage />
+          </AdminRoute>
         }
       />
 

@@ -45,8 +45,12 @@ export default function AlertsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAcknowledged, setShowAcknowledged] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState("ALL");
+  const [query, setQuery] = useState("");
   const [ackingIds, setAckingIds] = useState(new Set());
   const [ackedIds, setAckedIds] = useState(new Set());
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+  const [ackAllLoading, setAckAllLoading] = useState(false);
 
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
@@ -75,7 +79,9 @@ export default function AlertsPage() {
       setAckedIds((prev) => new Set(prev).add(alertId));
       setAllAlerts((prev) =>
         prev.map((a) =>
-          a.id === alertId ? { ...a, acknowledged: true } : a
+          a.alert_id === alertId
+            ? { ...a, is_acknowledged: true }
+            : a
         )
       );
     } catch {
@@ -89,16 +95,49 @@ export default function AlertsPage() {
     }
   }
 
+  async function handleAcknowledgeAll() {
+    setAckAllLoading(true);
+    try {
+      await alertApi.acknowledgeAll();
+      setAllAlerts((prev) => prev.map((a) => ({ ...a, is_acknowledged: true })));
+    } catch {
+      // Ignore hard failures here; single-item acknowledge remains available.
+    } finally {
+      setAckAllLoading(false);
+    }
+  }
+
+  function handleDismiss(alertId) {
+    setDismissedIds((prev) => new Set(prev).add(alertId));
+  }
+
   /* Counts */
   const acknowledged = allAlerts.filter(
-    (a) => a.acknowledged || ackedIds.has(a.id)
+    (a) => a.is_acknowledged || ackedIds.has(a.alert_id)
   );
   const unacknowledged = allAlerts.filter(
-    (a) => !a.acknowledged && !ackedIds.has(a.id)
+    (a) => !a.is_acknowledged && !ackedIds.has(a.alert_id)
   );
 
   /* Filtered list */
-  const visibleAlerts = showAcknowledged ? allAlerts : unacknowledged;
+  const baseAlerts = showAcknowledged ? allAlerts : unacknowledged;
+  const visibleAlerts = baseAlerts.filter((alert) => {
+    if (dismissedIds.has(alert.alert_id)) return false;
+
+    if (
+      severityFilter !== "ALL" &&
+      (alert.severity ?? "").toUpperCase() !== severityFilter
+    ) {
+      return false;
+    }
+
+    const haystack = `${alert.title ?? ""} ${alert.description ?? ""}`.toLowerCase();
+    if (query.trim() && !haystack.includes(query.trim().toLowerCase())) {
+      return false;
+    }
+
+    return true;
+  });
 
   return (
     <DashboardLayout>
@@ -141,7 +180,7 @@ export default function AlertsPage() {
         </div>
 
         {/* ── Toolbar ── */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Toggle: show acknowledged */}
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <div className="relative">
@@ -165,13 +204,43 @@ export default function AlertsPage() {
             <span className="text-sm text-gray-400">Show acknowledged</span>
           </label>
 
-          <button
-            type="button"
-            onClick={fetchAlerts}
-            className="flex items-center gap-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-gray-800 px-3 py-1.5 transition"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              className="rounded-lg border border-gray-700 bg-gray-900 px-2.5 py-1.5 text-xs text-gray-300 outline-none focus:border-cyber-500"
+            >
+              <option value="ALL">All severities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Search alerts"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="rounded-lg border border-gray-700 bg-gray-900 px-2.5 py-1.5 text-xs text-gray-300 placeholder-gray-500 outline-none focus:border-cyber-500"
+            />
+            <button
+              type="button"
+              onClick={fetchAlerts}
+              className="flex items-center gap-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-gray-800 px-3 py-1.5 transition"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            </button>
+            {!showAcknowledged && unacknowledged.length > 1 && (
+              <button
+                type="button"
+                onClick={handleAcknowledgeAll}
+                disabled={ackAllLoading}
+                className="rounded-lg border border-gray-600 px-3 py-1.5 text-xs text-gray-300 hover:border-green-500 hover:text-green-400 disabled:opacity-60"
+              >
+                {ackAllLoading ? "Acknowledging all..." : "Acknowledge all"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Error ── */}
@@ -205,11 +274,12 @@ export default function AlertsPage() {
         {!loading && visibleAlerts.length > 0 && (
           <ul className="space-y-3">
             {visibleAlerts.map((alert) => {
-              const isAcked = alert.acknowledged || ackedIds.has(alert.id);
-              const isAcking = ackingIds.has(alert.id);
+              const alertId = alert.alert_id;
+              const isAcked = alert.is_acknowledged || ackedIds.has(alertId);
+              const isAcking = ackingIds.has(alertId);
               return (
                 <li
-                  key={alert.id}
+                  key={alertId}
                   className={`bg-gray-900 border border-gray-800 border-l-4 ${leftBorderColor(
                     alert.severity
                   )} rounded-xl px-5 py-4 ${isAcked ? "opacity-60" : ""}`}
@@ -238,18 +308,27 @@ export default function AlertsPage() {
                     </div>
 
                     {!isAcked && (
-                      <button
-                        type="button"
-                        disabled={isAcking}
-                        onClick={() => handleAcknowledge(alert.id)}
-                        className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                          isAcking
-                            ? "border-green-600 text-green-400 opacity-60 cursor-wait"
-                            : "border-gray-600 text-gray-300 hover:border-green-500 hover:text-green-400"
-                        }`}
-                      >
-                        {isAcking ? "Acknowledging…" : "Acknowledge"}
-                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isAcking}
+                          onClick={() => handleAcknowledge(alertId)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                            isAcking
+                              ? "border-green-600 text-green-400 opacity-60 cursor-wait"
+                              : "border-gray-600 text-gray-300 hover:border-green-500 hover:text-green-400"
+                          }`}
+                        >
+                          {isAcking ? "Acknowledging…" : "Acknowledge"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDismiss(alertId)}
+                          className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:text-white"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
                     )}
                     {isAcked && (
                       <span className="shrink-0 text-xs text-green-500 font-medium">

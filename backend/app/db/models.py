@@ -33,6 +33,15 @@ class User(Base):
     )
     plan: Mapped[str] = mapped_column(String(20), default="free", nullable=False)
     scan_count_month: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    mfa_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    failed_login_attempts: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_login_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -48,6 +57,9 @@ class User(Base):
     )
     subscription: Mapped["Subscription | None"] = relationship(
         "Subscription", back_populates="user", uselist=False
+    )
+    security_events: Mapped[list["SecurityAuditEvent"]] = relationship(
+        "SecurityAuditEvent", back_populates="user", cascade="all, delete-orphan"
     )
 
 
@@ -180,3 +192,35 @@ class BillingEvent(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class SecurityAuditEvent(Base):
+    __tablename__ = "security_audit_events"
+
+    __table_args__ = (
+        Index("ix_security_audit_events_tenant_id", "tenant_id"),
+        Index("ix_security_audit_events_event_type", "event_type"),
+        Index("ix_security_audit_events_severity", "severity"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(
+        String(36),
+        unique=True,
+        default=lambda: str(uuid.uuid4()),
+        nullable=False,
+    )
+    user_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    tenant_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False, default="INFO")
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    details_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    user: Mapped["User | None"] = relationship("User", back_populates="security_events")

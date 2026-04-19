@@ -28,6 +28,14 @@ function usageColor(pct) {
 export default function SettingsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [mfaPreferred, setMfaPreferred] = React.useState(
+    () => localStorage.getItem("mycyber_mfa_preferred") === "true"
+  );
+
+  function handleMfaToggle(enabled) {
+    setMfaPreferred(enabled);
+    localStorage.setItem("mycyber_mfa_preferred", String(enabled));
+  }
 
   const planLimit = user?.plan_limit ?? 50;
   const scanCountMonth = user?.scan_count_month ?? 0;
@@ -122,6 +130,25 @@ export default function SettingsPage() {
                 </p>
               </div>
               <span className="text-xs text-gray-400">24h</span>
+            </div>
+
+            <div className="border-t border-gray-800 pt-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm text-white font-medium">Multi-Factor Authentication (MFA)</p>
+                <p className="text-xs text-gray-500">
+                  Enable app-based 2FA preference now. Enforcement in login will be enabled in a future release.
+                </p>
+                <p className="mt-1 text-[11px] text-cyan-400">Status: MFA groundwork enabled (not enforced yet)</p>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={mfaPreferred}
+                  onChange={(e) => handleMfaToggle(e.target.checked)}
+                />
+                <div className="peer h-6 w-11 rounded-full bg-gray-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-cyber-600 peer-checked:after:translate-x-full" />
+              </label>
             </div>
           </div>
         </section>

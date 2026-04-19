@@ -6,12 +6,16 @@ export const authApi = {
    * @param {string} email
    * @param {string} password
    */
-  login(email, password) {
+  login(email, password, mfaCode) {
     const params = new URLSearchParams();
     params.append("username", email);
     params.append("password", password);
+    const headers = { "Content-Type": "application/x-www-form-urlencoded" };
+    if (mfaCode) {
+      headers["X-MFA-CODE"] = mfaCode;
+    }
     return client.post("/api/v1/auth/login", params, {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers,
     });
   },
 

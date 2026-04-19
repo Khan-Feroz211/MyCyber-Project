@@ -19,6 +19,9 @@ the free plan, no credit card required.
 - First-run onboarding flow added for new users after registration.
 - Human-readable API error responses implemented for common failures.
 - Production security headers and root health redirect are enabled.
+- Phased MFA backend flow added (`off`, `opt_in`, `enforced`) with TOTP endpoints.
+- Login lockout and suspicious-login audit events are now recorded.
+- Admin incident APIs and dashboard route added for response actions.
 
 ## Why MyCyber?
 
@@ -128,9 +131,14 @@ Full API docs: https://api.mycyber.pk/docs
 - All data encrypted in transit (TLS)
 - Scan content processed in memory (not stored)
 - JWT auth with bcrypt password hashing
+- Phased MFA + account lockout controls
+- Security audit event pipeline for login and admin actions
+- Admin incident response endpoints for lock/unlock/deactivate/reactivate
 - Kubernetes NetworkPolicy (zero-trust)
 - GitHub Actions security scanning (Bandit + Trivy)
 - See [security page](https://mycyber.pk/security)
+- Ops checklist: `docs/SECURITY_BACKUP_RESTORE_CHECKLIST.md`
+- Hardening helper script: `scripts/security-hardening-checklist.sh`
 
 ## Built by
 

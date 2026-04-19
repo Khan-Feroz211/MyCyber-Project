@@ -100,9 +100,11 @@ class UserOut(BaseModel):
     email: str
     full_name: Optional[str]
     is_active: bool
+    is_admin: bool
     plan: str
     tenant_id: str
     scan_count_month: int
+    mfa_enabled: bool
     created_at: datetime
 
 
@@ -116,6 +118,31 @@ class TokenData(BaseModel):
     user_id: int
     email: str
     tenant_id: str
+
+
+class MFASetupResponse(BaseModel):
+    secret: str
+    provisioning_uri: str
+    issuer: str
+    account_name: str
+
+
+class MFAVerifyRequest(BaseModel):
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+class MFAStatusResponse(BaseModel):
+    enabled: bool
+    rollout_mode: str
+
+
+class AdminIncidentActionRequest(BaseModel):
+    user_id: int
+    reason: str = Field(default="Admin response action")
+
+
+class AdminLockUserRequest(AdminIncidentActionRequest):
+    lock_minutes: int = Field(default=60, ge=1, le=10080)
 
 
 # ---------------------------------------------------------------------------
