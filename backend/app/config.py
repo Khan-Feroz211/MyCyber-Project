@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     safepay_webhook_secret: str = ""
     frontend_url: str = "http://localhost:5173"
 
+    # Email
+    email_from: str = "noreply@mycyber.pk"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_use_tls: bool = True
+    smtp_username: str = ""
+    smtp_password: str = ""
+    sendgrid_api_key: str = ""
+
     class Config:
         env_file = ".env"
 

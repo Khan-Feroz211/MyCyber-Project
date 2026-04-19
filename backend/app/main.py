@@ -6,10 +6,17 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+
+from app.middleware.error_handler import (
+    http_exception_handler,
+    validation_exception_handler,
+)
 
 from .config import get_settings
 from .db.database import init_db
@@ -68,6 +75,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
 # ---------------------------------------------------------------------------
 # CORS
 # ---------------------------------------------------------------------------
@@ -89,6 +99,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         request_id = str(uuid.uuid4())[:8]
         start = time_module.time()
         response = await call_next(request)
+
+        if _settings.app_env == "production":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+
         latency_ms = round((time_module.time() - start) * 1000, 1)
         logger.info(
             "HTTP request",
@@ -120,3 +139,8 @@ app.include_router(auth.router, prefix="/api/v1")  # /api/v1/auth/…
 app.include_router(scan.router, prefix="/api/v1")  # /api/v1/scan/…
 app.include_router(alert.router, prefix="/api/v1")  # /api/v1/alerts/…
 app.include_router(billing.router, prefix="/api/v1")  # /api/v1/billing/…
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/health")

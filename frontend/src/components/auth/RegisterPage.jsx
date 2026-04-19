@@ -10,7 +10,7 @@ const FEATURES = [
 ];
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
@@ -36,13 +36,17 @@ export default function RegisterPage() {
     try {
       await register(email, password, fullName);
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 2000);
+
+      // Auto-sign-in newly registered users to start onboarding immediately.
+      await login(email, password);
+      navigate("/onboarding", { replace: true });
     } catch (err) {
-      const detail =
+      const message =
+        err?.response?.data?.message ||
         err?.response?.data?.detail ||
         err?.message ||
         "Registration failed. Please try again.";
-      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      setError(typeof message === "string" ? message : "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -101,7 +105,7 @@ export default function RegisterPage() {
           {success && (
             <div className="mb-5 rounded-lg bg-green-950 border border-green-700 px-4 py-3">
               <p className="text-sm text-green-400">
-                Account created! Redirecting to sign in…
+                Account created! Preparing your onboarding...
               </p>
             </div>
           )}

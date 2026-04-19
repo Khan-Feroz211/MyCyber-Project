@@ -45,6 +45,18 @@ function riskBarColor(score) {
   return "bg-green-500";
 }
 
+function normalizeList(payload, candidateKeys = []) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+
+  for (const key of candidateKeys) {
+    const value = payload[key];
+    if (Array.isArray(value)) return value;
+  }
+
+  return [];
+}
+
 /* ─── Skeleton loader ──────────────────────────────────────────────── */
 function SkeletonBlock({ className = "" }) {
   return (
@@ -108,8 +120,8 @@ export default function DashboardPage() {
         scanApi.getHistory(1, 5),
       ]);
       setStats(statsRes.data);
-      setAlerts(alertsRes.data?.alerts ?? alertsRes.data ?? []);
-      setHistory(historyRes.data?.scans ?? historyRes.data ?? []);
+      setAlerts(normalizeList(alertsRes.data, ["alerts", "items", "results", "data"]));
+      setHistory(normalizeList(historyRes.data, ["scans", "items", "results", "data"]));
     } catch (err) {
       setError(
         err?.response?.data?.detail || err?.message || "Failed to load dashboard data."

@@ -19,6 +19,15 @@ import HistoryPage from "./pages/HistoryPage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
 import BillingPage from "./pages/BillingPage";
+import LandingPage from "./pages/LandingPage";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import TermsOfService from "./pages/legal/TermsOfService";
+import Footer from "./components/layout/Footer";
+import Onboarding from "./pages/Onboarding";
+import {
+  OnboardingProvider,
+  useOnboarding,
+} from "./context/OnboardingContext";
 
 /* ─── Private route guard ──────────────────────────────────────────── */
 /**
@@ -45,66 +54,156 @@ function PrivateRoute({ children }) {
   return children;
 }
 
+function OnboardingRoute() {
+  const { isAuthenticated, loading } = useAuth();
+  const { shouldShowOnboarding, isComplete } = useOnboarding();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!shouldShowOnboarding || isComplete) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Onboarding />;
+}
+
+function ProtectedAppRoute({ children }) {
+  const { shouldShowOnboarding, isComplete } = useOnboarding();
+
+  if (shouldShowOnboarding && !isComplete) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <PrivateRoute>{children}</PrivateRoute>;
+}
+
+function HomeRoute() {
+  const { isAuthenticated, loading } = useAuth();
+  const { shouldShowOnboarding, isComplete } = useOnboarding();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    if (shouldShowOnboarding && !isComplete) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <LandingPage />;
+}
+
+function SecurityPage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <main className="mx-auto max-w-4xl px-6 py-16 lg:px-8">
+        <h1 className="text-3xl font-bold text-white">Security</h1>
+        <p className="mt-4 text-gray-400">
+          Security overview page is being finalized. Contact support for security
+          questionnaires and architecture notes.
+        </p>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function ContactPage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <main className="mx-auto max-w-4xl px-6 py-16 lg:px-8">
+        <h1 className="text-3xl font-bold text-white">Contact</h1>
+        <p className="mt-4 text-gray-400">
+          Reach us at support@mycyber.pk for customer support and sales@mycyber.pk
+          for enterprise onboarding.
+        </p>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 /* ─── Router ────────────────────────────────────────────────────────── */
 function AppRoutes() {
   return (
     <Routes>
       {/* ── Public routes ── */}
+      <Route path="/" element={<HomeRoute />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/security" element={<SecurityPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/onboarding" element={<OnboardingRoute />} />
 
       {/* ── Protected routes ── */}
       <Route
         path="/dashboard"
         element={
-          <PrivateRoute>
+          <ProtectedAppRoute>
             <DashboardPage />
-          </PrivateRoute>
+          </ProtectedAppRoute>
         }
       />
       <Route
         path="/scan"
         element={
-          <PrivateRoute>
+          <ProtectedAppRoute>
             <ScanPage />
-          </PrivateRoute>
+          </ProtectedAppRoute>
         }
       />
       <Route
         path="/history"
         element={
-          <PrivateRoute>
+          <ProtectedAppRoute>
             <HistoryPage />
-          </PrivateRoute>
+          </ProtectedAppRoute>
         }
       />
       <Route
         path="/alerts"
         element={
-          <PrivateRoute>
+          <ProtectedAppRoute>
             <AlertsPage />
-          </PrivateRoute>
+          </ProtectedAppRoute>
         }
       />
       <Route
         path="/billing"
         element={
-          <PrivateRoute>
+          <ProtectedAppRoute>
             <BillingPage />
-          </PrivateRoute>
+          </ProtectedAppRoute>
         }
       />
       <Route
         path="/settings"
         element={
-          <PrivateRoute>
+          <ProtectedAppRoute>
             <SettingsPage />
-          </PrivateRoute>
+          </ProtectedAppRoute>
         }
       />
 
       {/* ── Catch-all redirects ── */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
@@ -115,7 +214,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <OnboardingProvider>
+          <AppRoutes />
+        </OnboardingProvider>
       </AuthProvider>
     </BrowserRouter>
   );

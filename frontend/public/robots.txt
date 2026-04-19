@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /security
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+Disallow: /dashboard
+Disallow: /scan
+Disallow: /history
+Disallow: /alerts
+Disallow: /billing
+Disallow: /api/
+
+Sitemap: https://mycyber.pk/sitemap.xml

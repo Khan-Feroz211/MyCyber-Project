@@ -30,6 +30,15 @@ function leftBorderColor(severity) {
   return LEFT_BORDER_COLORS[(severity ?? "").toUpperCase()] ?? "border-l-gray-600";
 }
 
+function normalizeAlerts(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  if (Array.isArray(payload.alerts)) return payload.alerts;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.results)) return payload.results;
+  return [];
+}
+
 /* ─── Main page ────────────────────────────────────────────────────── */
 export default function AlertsPage() {
   const [allAlerts, setAllAlerts] = useState([]);
@@ -44,7 +53,7 @@ export default function AlertsPage() {
     setError("");
     try {
       const res = await alertApi.getAlerts(true, 1, 100);
-      setAllAlerts(res.data?.alerts ?? res.data ?? []);
+      setAllAlerts(normalizeAlerts(res.data));
     } catch (err) {
       setError(
         err?.response?.data?.detail || err?.message || "Failed to load alerts."

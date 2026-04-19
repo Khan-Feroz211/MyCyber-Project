@@ -40,6 +40,15 @@ function riskBarColor(score) {
   return "bg-green-500";
 }
 
+function normalizeScans(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  if (Array.isArray(payload.scans)) return payload.scans;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.results)) return payload.results;
+  return [];
+}
+
 function ScanTypeIcon({ type }) {
   const t = (type ?? "").toLowerCase();
   if (t === "file") return <File className="h-3.5 w-3.5 text-gray-400" />;
@@ -174,8 +183,9 @@ export default function HistoryPage() {
         typeFilter !== "ALL" ? typeFilter.toLowerCase() : undefined
       );
       const data = res.data;
-      setScans(data?.scans ?? data ?? []);
-      setTotal(data?.total ?? (data?.scans ?? data ?? []).length);
+      const normalizedScans = normalizeScans(data);
+      setScans(normalizedScans);
+      setTotal(typeof data?.total === "number" ? data.total : normalizedScans.length);
     } catch (err) {
       setError(err?.response?.data?.detail || err?.message || "Failed to load history.");
     } finally {

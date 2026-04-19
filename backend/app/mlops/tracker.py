@@ -32,7 +32,7 @@ def setup_mlflow() -> None:
     except Exception as exc:
         logger.warning(
             "MLflow setup failed — continuing without",
-            extra={"message": str(exc)},
+            extra={"mlflow_error": str(exc)},
         )
 
 
@@ -91,7 +91,7 @@ def track_scan(scan_type: str) -> Callable:
             except Exception as mlflow_err:
                 logger.warning(
                     "MLflow tracking failed",
-                    extra={"message": str(mlflow_err)},
+                    extra={"mlflow_error": str(mlflow_err)},
                 )
 
         if asyncio.iscoroutinefunction(func):

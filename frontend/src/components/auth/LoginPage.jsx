@@ -28,11 +28,12 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/dashboard");
     } catch (err) {
-      const detail =
+      const message =
+        err?.response?.data?.message ||
         err?.response?.data?.detail ||
         err?.message ||
         "Invalid email or password.";
-      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      setError(typeof message === "string" ? message : "Invalid email or password.");
     } finally {
       setLoading(false);
     }
