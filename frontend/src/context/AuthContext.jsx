@@ -17,6 +17,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const refreshUser = useCallback(async () => {
+    const res = await authApi.me();
+    setUser(res.data);
+    return res.data;
+  }, []);
+
   // On mount: restore session from localStorage and validate token
   useEffect(() => {
     const storedToken = localStorage.getItem("mycyber_token");
@@ -49,8 +55,8 @@ export function AuthProvider({ children }) {
    * @param {string} email
    * @param {string} password
    */
-  const login = useCallback(async (email, password) => {
-    const res = await authApi.login(email, password);
+  const login = useCallback(async (email, password, mfaCode) => {
+    const res = await authApi.login(email, password, mfaCode);
     const accessToken = res.data.access_token;
 
     localStorage.setItem("mycyber_token", accessToken);
@@ -107,8 +113,9 @@ export function AuthProvider({ children }) {
       login,
       logout,
       register,
+      refreshUser,
     }),
-    [user, token, loading, isAuthenticated, login, logout, register]
+    [user, token, loading, isAuthenticated, login, logout, register, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

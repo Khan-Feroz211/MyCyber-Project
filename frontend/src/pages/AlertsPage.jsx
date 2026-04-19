@@ -1,16 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Shield } from "lucide-react";
+import { RefreshCw, Shield, ShieldAlert, Sparkles } from "lucide-react";
 import { alertApi } from "../api/alerts";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import SeverityBadge from "../components/ui/SeverityBadge";
 import EmptyState from "../components/ui/EmptyState";
-
-/* ─── helpers ──────────────────────────────────────────────────────── */
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 function timeAgo(isoString) {
-  if (!isoString) return "—";
+  if (!isoString) return "-";
   const diff = Date.now() - new Date(isoString).getTime();
-  const mins = Math.floor(diff / 60_000);
+  const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -22,12 +21,12 @@ const LEFT_BORDER_COLORS = {
   CRITICAL: "border-l-red-500",
   HIGH: "border-l-orange-500",
   MEDIUM: "border-l-yellow-500",
-  LOW: "border-l-blue-500",
-  SAFE: "border-l-green-500",
+  LOW: "border-l-sky-500",
+  SAFE: "border-l-emerald-400",
 };
 
 function leftBorderColor(severity) {
-  return LEFT_BORDER_COLORS[(severity ?? "").toUpperCase()] ?? "border-l-gray-600";
+  return LEFT_BORDER_COLORS[(severity ?? "").toUpperCase()] ?? "border-l-slate-600";
 }
 
 function normalizeAlerts(payload) {
@@ -39,7 +38,6 @@ function normalizeAlerts(payload) {
   return [];
 }
 
-/* ─── Main page ────────────────────────────────────────────────────── */
 export default function AlertsPage() {
   const [allAlerts, setAllAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,9 +57,7 @@ export default function AlertsPage() {
       const res = await alertApi.getAlerts(true, 1, 100);
       setAllAlerts(normalizeAlerts(res.data));
     } catch (err) {
-      setError(
-        err?.response?.data?.detail || err?.message || "Failed to load alerts."
-      );
+      setError(err?.response?.data?.detail || err?.message || "Failed to load alerts.");
     } finally {
       setLoading(false);
     }
@@ -72,20 +68,13 @@ export default function AlertsPage() {
   }, [fetchAlerts]);
 
   async function handleAcknowledge(alertId) {
-    // Optimistic update
     setAckingIds((prev) => new Set(prev).add(alertId));
     try {
       await alertApi.acknowledge(alertId);
       setAckedIds((prev) => new Set(prev).add(alertId));
       setAllAlerts((prev) =>
-        prev.map((a) =>
-          a.alert_id === alertId
-            ? { ...a, is_acknowledged: true }
-            : a
-        )
+        prev.map((a) => (a.alert_id === alertId ? { ...a, is_acknowledged: true } : a))
       );
-    } catch {
-      // revert optimistic if needed — badge will stay as before
     } finally {
       setAckingIds((prev) => {
         const next = new Set(prev);
@@ -100,8 +89,6 @@ export default function AlertsPage() {
     try {
       await alertApi.acknowledgeAll();
       setAllAlerts((prev) => prev.map((a) => ({ ...a, is_acknowledged: true })));
-    } catch {
-      // Ignore hard failures here; single-item acknowledge remains available.
     } finally {
       setAckAllLoading(false);
     }
@@ -111,167 +98,138 @@ export default function AlertsPage() {
     setDismissedIds((prev) => new Set(prev).add(alertId));
   }
 
-  /* Counts */
-  const acknowledged = allAlerts.filter(
-    (a) => a.is_acknowledged || ackedIds.has(a.alert_id)
-  );
-  const unacknowledged = allAlerts.filter(
-    (a) => !a.is_acknowledged && !ackedIds.has(a.alert_id)
-  );
+  const acknowledged = allAlerts.filter((a) => a.is_acknowledged || ackedIds.has(a.alert_id));
+  const unacknowledged = allAlerts.filter((a) => !a.is_acknowledged && !ackedIds.has(a.alert_id));
 
-  /* Filtered list */
   const baseAlerts = showAcknowledged ? allAlerts : unacknowledged;
   const visibleAlerts = baseAlerts.filter((alert) => {
     if (dismissedIds.has(alert.alert_id)) return false;
-
-    if (
-      severityFilter !== "ALL" &&
-      (alert.severity ?? "").toUpperCase() !== severityFilter
-    ) {
-      return false;
-    }
-
+    if (severityFilter !== "ALL" && (alert.severity ?? "").toUpperCase() !== severityFilter) return false;
     const haystack = `${alert.title ?? ""} ${alert.description ?? ""}`.toLowerCase();
-    if (query.trim() && !haystack.includes(query.trim().toLowerCase())) {
-      return false;
-    }
-
+    if (query.trim() && !haystack.includes(query.trim().toLowerCase())) return false;
     return true;
   });
 
   return (
     <DashboardLayout>
-      <div className="space-y-5">
-        {/* ── Stats row ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center gap-3">
-            <span className="flex items-center justify-center h-9 w-9 rounded-full bg-red-900/50">
-              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold text-white tabular-nums">
-                {unacknowledged.length}
+      <div className="space-y-6">
+        <section className="surface-panel-strong rounded-[30px] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="eyebrow">
+                <Sparkles className="h-3.5 w-3.5" />
+                Incident Queue
+              </div>
+              <h1 className="headline-balance mt-5 text-3xl font-bold text-white sm:text-4xl">
+                Alerts should feel triage-ready, not like generic notifications.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+                Analysts need immediate context, clean actions, and a surface that supports quick review under pressure.
               </p>
-              <p className="text-xs text-gray-400">Unacknowledged</p>
             </div>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center gap-3">
-            <span className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-800">
-              <span className="h-2 w-2 rounded-full bg-gray-400" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold text-white tabular-nums">
-                {allAlerts.length}
-              </p>
-              <p className="text-xs text-gray-400">Total alerts</p>
-            </div>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center gap-3">
-            <span className="flex items-center justify-center h-9 w-9 rounded-full bg-green-900/50">
-              <span className="h-2 w-2 rounded-full bg-green-500" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold text-white tabular-nums">
-                {acknowledged.length}
-              </p>
-              <p className="text-xs text-gray-400">Acknowledged</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Toolbar ── */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Toggle: show acknowledged */}
-          <label className="flex items-center gap-2.5 cursor-pointer select-none">
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={showAcknowledged}
-                onChange={(e) => setShowAcknowledged(e.target.checked)}
-              />
-              <div
-                className={`w-10 h-5 rounded-full transition-colors ${
-                  showAcknowledged ? "bg-cyber-600" : "bg-gray-700"
-                }`}
-              />
-              <div
-                className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                  showAcknowledged ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </div>
-            <span className="text-sm text-gray-400">Show acknowledged</span>
-          </label>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="rounded-lg border border-gray-700 bg-gray-900 px-2.5 py-1.5 text-xs text-gray-300 outline-none focus:border-cyber-500"
-            >
-              <option value="ALL">All severities</option>
-              <option value="CRITICAL">Critical</option>
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Search alerts"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="rounded-lg border border-gray-700 bg-gray-900 px-2.5 py-1.5 text-xs text-gray-300 placeholder-gray-500 outline-none focus:border-cyber-500"
-            />
             <button
               type="button"
               onClick={fetchAlerts}
-              className="flex items-center gap-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-gray-800 px-3 py-1.5 transition"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+              <RefreshCw className="h-4 w-4" />
+              Refresh alerts
             </button>
-            {!showAcknowledged && unacknowledged.length > 1 && (
-              <button
-                type="button"
-                onClick={handleAcknowledgeAll}
-                disabled={ackAllLoading}
-                className="rounded-lg border border-gray-600 px-3 py-1.5 text-xs text-gray-300 hover:border-green-500 hover:text-green-400 disabled:opacity-60"
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="surface-panel rounded-2xl px-5 py-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/15">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
+              </span>
+              <div>
+                <p className="text-2xl font-bold text-white tabular-nums">{unacknowledged.length}</p>
+                <p className="text-xs text-slate-400">Unacknowledged</p>
+              </div>
+            </div>
+            <div className="surface-panel rounded-2xl px-5 py-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-800">
+                <ShieldAlert className="h-4 w-4 text-slate-300" />
+              </span>
+              <div>
+                <p className="text-2xl font-bold text-white tabular-nums">{allAlerts.length}</p>
+                <p className="text-xs text-slate-400">Total alerts</p>
+              </div>
+            </div>
+            <div className="surface-panel rounded-2xl px-5 py-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              </span>
+              <div>
+                <p className="text-2xl font-bold text-white tabular-nums">{acknowledged.length}</p>
+                <p className="text-xs text-slate-400">Acknowledged</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="surface-panel rounded-[28px] p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex cursor-pointer select-none items-center gap-2.5">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={showAcknowledged}
+                  onChange={(e) => setShowAcknowledged(e.target.checked)}
+                />
+                <div className={`h-5 w-10 rounded-full transition-colors ${showAcknowledged ? "bg-cyan-600" : "bg-slate-700"}`} />
+                <div className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showAcknowledged ? "translate-x-5" : "translate-x-0"}`} />
+              </div>
+              <span className="text-sm text-slate-400">Show acknowledged</span>
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={severityFilter}
+                onChange={(e) => setSeverityFilter(e.target.value)}
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-300 outline-none focus:border-cyan-500"
               >
-                {ackAllLoading ? "Acknowledging all..." : "Acknowledge all"}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── Error ── */}
-        {error && (
-          <div className="rounded-lg bg-red-950 border border-red-700 px-4 py-3">
-            <p className="text-sm text-red-400">{error}</p>
-          </div>
-        )}
-
-        {/* ── Loading skeleton ── */}
-        {loading && (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-24 animate-pulse bg-gray-800 rounded-xl"
+                <option value="ALL">All severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Search alerts"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-300 placeholder-slate-500 outline-none focus:border-cyan-500"
               />
-            ))}
+              {!showAcknowledged && unacknowledged.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handleAcknowledgeAll}
+                  disabled={ackAllLoading}
+                  className="rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] disabled:opacity-60"
+                >
+                  {ackAllLoading ? "Acknowledging all..." : "Acknowledge all"}
+                </button>
+              )}
+            </div>
           </div>
-        )}
+        </section>
 
-        {/* ── Alert cards ── */}
-        {!loading && visibleAlerts.length === 0 && (
+        {error && <div className="rounded-2xl border border-red-700 bg-red-950/30 px-4 py-3 text-sm text-red-200">{error}</div>}
+
+        {loading ? (
+          <div className="surface-panel rounded-[28px] p-10">
+            <LoadingSpinner size="lg" text="Loading alerts" />
+          </div>
+        ) : visibleAlerts.length === 0 ? (
           <EmptyState
             icon={<Shield />}
             title="No active security alerts"
-            message="You're all clear. Alerts will appear here when MyCyber DLP detects a threat."
+            message="You are clear for now. New detections will appear here when the platform needs attention."
           />
-        )}
-
-        {!loading && visibleAlerts.length > 0 && (
+        ) : (
           <ul className="space-y-3">
             {visibleAlerts.map((alert) => {
               const alertId = alert.alert_id;
@@ -280,60 +238,47 @@ export default function AlertsPage() {
               return (
                 <li
                   key={alertId}
-                  className={`bg-gray-900 border border-gray-800 border-l-4 ${leftBorderColor(
-                    alert.severity
-                  )} rounded-xl px-5 py-4 ${isAcked ? "opacity-60" : ""}`}
+                  className={`surface-panel hover-lift rounded-[24px] border-l-4 px-5 py-4 ${leftBorderColor(alert.severity)} ${isAcked ? "opacity-60" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-white truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-white">
                           {alert.title ?? alert.message ?? "Security Alert"}
                         </p>
                         <SeverityBadge severity={alert.severity} />
                       </div>
                       {(alert.description ?? alert.message) && (
-                        <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
-                          {(alert.description ?? alert.message ?? "").slice(0, 150)}
+                        <p className="line-clamp-2 text-sm leading-7 text-slate-400">
+                          {(alert.description ?? alert.message ?? "").slice(0, 180)}
                         </p>
                       )}
-                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                        {alert.scan_id && (
-                          <span className="font-mono">
-                            scan:{String(alert.scan_id).slice(0, 8)}…
-                          </span>
-                        )}
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                        {alert.scan_id && <span className="font-mono-ui">scan:{String(alert.scan_id).slice(0, 8)}...</span>}
                         <span>{timeAgo(alert.created_at)}</span>
                       </div>
                     </div>
 
-                    {!isAcked && (
+                    {!isAcked ? (
                       <div className="flex shrink-0 items-center gap-2">
                         <button
                           type="button"
                           disabled={isAcking}
                           onClick={() => handleAcknowledge(alertId)}
-                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                            isAcking
-                              ? "border-green-600 text-green-400 opacity-60 cursor-wait"
-                              : "border-gray-600 text-gray-300 hover:border-green-500 hover:text-green-400"
-                          }`}
+                          className="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] disabled:cursor-wait disabled:opacity-60"
                         >
-                          {isAcking ? "Acknowledging…" : "Acknowledge"}
+                          {isAcking ? "Acknowledging..." : "Acknowledge"}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDismiss(alertId)}
-                          className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:text-white"
+                          className="rounded-xl border border-white/10 px-3 py-1.5 text-xs text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
                         >
                           Dismiss
                         </button>
                       </div>
-                    )}
-                    {isAcked && (
-                      <span className="shrink-0 text-xs text-green-500 font-medium">
-                        ✓ Acknowledged
-                      </span>
+                    ) : (
+                      <span className="shrink-0 text-xs font-medium text-emerald-300">Acknowledged</span>
                     )}
                   </div>
                 </li>

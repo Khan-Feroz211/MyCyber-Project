@@ -17,13 +17,16 @@ export default function LoadingSpinner({ size = "md", text }) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-3">
-      <div
-        className={`${ringClass} animate-spin rounded-full border-gray-700 border-t-cyan-500`}
-        role="status"
-        aria-label="Loading"
-      />
+      <div className="relative">
+        <div className={`absolute inset-0 rounded-full bg-cyan-400/10 blur-md ${ringClass}`} aria-hidden="true" />
+        <div
+          className={`${ringClass} relative animate-spin rounded-full border border-white/10 border-t-cyan-400 border-r-emerald-300`}
+          role="status"
+          aria-label="Loading"
+        />
+      </div>
       {text && (
-        <span className="text-sm text-gray-400 select-none">{text}</span>
+        <span className="font-mono-ui text-xs uppercase tracking-[0.22em] text-slate-400 select-none">{text}</span>
       )}
     </div>
   );

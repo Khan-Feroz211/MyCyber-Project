@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { alertApi } from "../../api/alerts";
+import { isAdminUser } from "../../utils/access";
 
 
 const NAV_ITEMS = [
@@ -66,7 +67,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   const email = user?.email ?? localStorage.getItem("mycyber_email") ?? "";
   const initials = getInitials(email);
-  const navItems = user?.is_admin
+  const navItems = isAdminUser(user)
     ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS]
     : NAV_ITEMS;
 
@@ -135,7 +136,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-64 flex-col bg-gray-900">
+      <aside className="surface-panel-strong fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r md:flex">
         {sidebarContent}
       </aside>
 
@@ -153,7 +154,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
             aria-hidden="true"
           />
           {/* Drawer */}
-          <aside className="relative z-50 w-64 flex flex-col bg-gray-900 shadow-2xl">
+          <aside className="surface-panel-strong relative z-50 flex w-64 flex-col shadow-2xl">
             {sidebarContent}
           </aside>
         </div>

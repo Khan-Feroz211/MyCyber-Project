@@ -39,4 +39,24 @@ export const authApi = {
   me() {
     return client.get("/api/v1/auth/me");
   },
+
+  meFull() {
+    return client.get("/api/v1/auth/me/full");
+  },
+
+  getMfaStatus() {
+    return client.get("/api/v1/auth/mfa/status");
+  },
+
+  beginMfaSetup() {
+    return client.post("/api/v1/auth/mfa/setup");
+  },
+
+  verifyMfa(code) {
+    return client.post("/api/v1/auth/mfa/verify", { code });
+  },
+
+  disableMfa(code) {
+    return client.post("/api/v1/auth/mfa/disable", { code });
+  },
 };

@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-950">
+    <div className="product-shell flex min-h-screen">
       {/* Sidebar */}
       <Sidebar
         mobileOpen={sidebarOpen}
@@ -83,9 +83,9 @@ export default function DashboardLayout({ children }) {
       />
 
       {/* Main content — offset by sidebar width on md+ */}
-      <div className="flex flex-1 flex-col md:ml-64 min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col md:ml-64">
         {/* Mobile hamburger row */}
-        <div className="flex items-center gap-3 px-4 h-14 bg-gray-900 border-b border-gray-800 md:hidden">
+        <div className="surface-panel-strong flex h-14 items-center gap-3 border-b px-4 md:hidden">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
@@ -107,8 +107,10 @@ export default function DashboardLayout({ children }) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto scrollbar-thin p-6">
+        <main className="scrollbar-thin flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="page-enter">
           {children}
+          </div>
         </main>
       </div>
     </div>

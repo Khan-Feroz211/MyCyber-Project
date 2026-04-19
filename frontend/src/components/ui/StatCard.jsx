@@ -38,23 +38,24 @@ export default function StatCard({
       : "text-gray-500";
 
   return (
-    <div className="relative flex flex-col justify-between bg-gray-900 border border-gray-800 rounded-xl p-6 overflow-hidden">
+    <div className="surface-panel hover-lift relative flex flex-col justify-between overflow-hidden rounded-2xl p-6">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
       {/* Icon circle — top right */}
       {icon && (
         <div
-          className={`absolute top-4 right-4 flex items-center justify-center h-10 w-10 rounded-full ${color}`}
+          className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg ${color}`}
         >
           <span className="text-white [&>svg]:h-5 [&>svg]:w-5">{icon}</span>
         </div>
       )}
 
       {/* Value */}
-      <p className="text-3xl font-bold text-white mt-1 tabular-nums leading-none">
-        {value ?? "—"}
+      <p className="mt-1 pr-12 text-3xl font-bold leading-none text-white tabular-nums">
+        {value ?? "-"}
       </p>
 
       {/* Title */}
-      <p className="mt-2 text-sm text-gray-400">{title}</p>
+      <p className="mt-2 text-sm text-slate-400">{title}</p>
 
       {/* Trend + subtitle */}
       <div className="mt-3 flex items-center gap-1.5">
@@ -70,9 +71,7 @@ export default function StatCard({
       </div>
 
       {/* Subtle bottom-left accent bar */}
-      <div
-        className={`absolute bottom-0 left-0 h-0.5 w-1/3 rounded-full opacity-60 ${color}`}
-      />
+      <div className={`absolute bottom-0 left-0 h-[3px] w-1/3 rounded-r-full opacity-75 ${color}`} />
     </div>
   );
 }

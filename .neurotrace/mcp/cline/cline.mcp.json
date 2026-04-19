@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "neurotrace": {
+      "command": "c:\\Users\\Feroz Khan\\AppData\\Roaming\\Code\\User\\globalStorage\\blackirontechnologies.neurotrace\\neurotrace.exe",
+      "args": [
+        "--mcp",
+        "--workspace",
+        "${workspaceFolder}"
+      ]
+    }
+  }
+}

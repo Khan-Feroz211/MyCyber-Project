@@ -3,6 +3,7 @@ import {
   AlertCircle,
   CheckCircle,
   Globe,
+  HardDrive,
   Loader2,
   Paperclip,
   Terminal,
@@ -173,6 +174,7 @@ export default function ScanPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState("");
   const fileInputRef = useRef(null);
+  const externalDriveInputRef = useRef(null);
 
   /* Network tab state */
   const [netPayload, setNetPayload] = useState("");
@@ -234,6 +236,11 @@ export default function ScanPage() {
     }
   }
 
+  async function handleExternalDriveScan(e) {
+    e.preventDefault();
+    await handleFileScan(e);
+  }
+
   /* ── Network scan ── */
   async function handleNetworkScan(e) {
     e.preventDefault();
@@ -280,6 +287,12 @@ export default function ScanPage() {
             icon={Globe}
             active={activeTab === "network"}
             onClick={() => { setActiveTab("network"); resetResult(); }}
+          />
+          <TabButton
+            label="External Drive"
+            icon={HardDrive}
+            active={activeTab === "external-drive"}
+            onClick={() => { setActiveTab("external-drive"); resetResult(); }}
           />
         </div>
 
@@ -392,6 +405,70 @@ export default function ScanPage() {
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {loading ? "Analyzing with AI…" : "Scan File"}
+              </button>
+            </form>
+          )}
+
+          {activeTab === "external-drive" && (
+            <form onSubmit={handleExternalDriveScan} className="space-y-4">
+              <div className="rounded-lg border border-cyan-900 bg-cyan-950/20 p-4 text-sm text-gray-300">
+                Attach or mount the external drive on your device, then browse and select a file from that drive.
+                This uses the live file-scan API. The browser cannot directly detect physical drive insertion.
+              </div>
+
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => externalDriveInputRef.current?.click()}
+                onKeyDown={(e) => e.key === "Enter" && externalDriveInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleFileSelect(e.dataTransfer.files[0] ?? null);
+                }}
+                className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-cyan-800 hover:border-cyan-600 rounded-xl py-12 cursor-pointer transition"
+              >
+                <HardDrive className="h-10 w-10 text-cyan-500" />
+                {selectedFile ? (
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-white">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {(selectedFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-1">
+                    <p className="text-sm text-gray-300 font-medium">
+                      Select a file from the attached drive
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Browse to the mounted USB or external drive and choose a file to scan
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <input
+                ref={externalDriveInputRef}
+                type="file"
+                className="hidden"
+                accept=".txt,.pdf,.docx,.csv,.json,.log,.xml,.eml"
+                onChange={(e) => handleFileSelect(e.target.files[0] ?? null)}
+              />
+
+              {fileError && (
+                <p className="text-xs text-red-400">{fileError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !selectedFile}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 text-sm transition"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {loading ? "Scanning drive file..." : "Scan External Drive File"}
               </button>
             </form>
           )}

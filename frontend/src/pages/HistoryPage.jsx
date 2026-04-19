@@ -1,15 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  AlertTriangle,
-  CheckCircle,
   Clock,
   Eye,
-  EyeOff,
   File,
   FileText,
   Filter,
   Globe,
   RefreshCw,
+  Search,
+  Sparkles,
   X,
 } from "lucide-react";
 import { scanApi } from "../api/scans";
@@ -19,10 +18,8 @@ import ActionBadge from "../components/ui/ActionBadge";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import EmptyState from "../components/ui/EmptyState";
 
-/* ─── helpers ──────────────────────────────────────────────────────── */
-
 function formatDate(isoString) {
-  if (!isoString) return "—";
+  if (!isoString) return "-";
   const d = new Date(isoString);
   return d.toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -37,7 +34,7 @@ function formatDate(isoString) {
 function riskBarColor(score) {
   if (score > 70) return "bg-red-500";
   if (score > 40) return "bg-amber-500";
-  return "bg-green-500";
+  return "bg-emerald-400";
 }
 
 function normalizeScans(payload) {
@@ -51,39 +48,28 @@ function normalizeScans(payload) {
 
 function ScanTypeIcon({ type }) {
   const t = (type ?? "").toLowerCase();
-  if (t === "file") return <File className="h-3.5 w-3.5 text-gray-400" />;
-  if (t === "network") return <Globe className="h-3.5 w-3.5 text-gray-400" />;
-  return <FileText className="h-3.5 w-3.5 text-gray-400" />;
+  if (t === "file") return <File className="h-3.5 w-3.5 text-slate-400" />;
+  if (t === "network") return <Globe className="h-3.5 w-3.5 text-slate-400" />;
+  return <FileText className="h-3.5 w-3.5 text-slate-400" />;
 }
 
 const SEVERITIES = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW", "SAFE"];
 const SCAN_TYPES = ["ALL", "TEXT", "FILE", "NETWORK"];
 const PAGE_SIZES = [10, 20, 50];
 
-function SkeletonBlock({ className = "" }) {
-  return <div className={`animate-pulse bg-gray-800 rounded-lg ${className}`} />;
-}
-
-/* ─── Detail modal (slide-in from right) ──────────────────────────── */
 function ScanDetailModal({ scan, onClose }) {
   if (!scan) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      {/* Panel */}
-      <aside className="relative z-10 w-full max-w-sm bg-gray-900 border-l border-gray-800 h-full overflow-y-auto p-6 shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <aside className="surface-panel-strong relative z-10 h-full w-full max-w-sm overflow-y-auto border-l p-6 shadow-2xl">
+        <div className="mb-6 flex items-center justify-between">
           <h2 className="text-base font-semibold text-white">Scan Details</h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center h-8 w-8 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -92,62 +78,51 @@ function ScanDetailModal({ scan, onClose }) {
 
         <dl className="space-y-4">
           <div>
-            <dt className="text-xs text-gray-500 mb-1">Date / Time</dt>
+            <dt className="mb-1 text-xs text-slate-500">Date / Time</dt>
             <dd className="text-sm text-white">{formatDate(scan.created_at)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500 mb-1">Scan Type</dt>
-            <dd className="text-sm text-white capitalize">{scan.scan_type ?? "—"}</dd>
+            <dt className="mb-1 text-xs text-slate-500">Scan Type</dt>
+            <dd className="text-sm capitalize text-white">{scan.scan_type ?? "-"}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500 mb-1">Severity</dt>
+            <dt className="mb-1 text-xs text-slate-500">Severity</dt>
             <dd><SeverityBadge severity={scan.severity} /></dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500 mb-1">Risk Score</dt>
-            <dd className="text-sm text-white tabular-nums">
-              {Math.round(scan.risk_score ?? 0)} / 100
-            </dd>
+            <dt className="mb-1 text-xs text-slate-500">Risk Score</dt>
+            <dd className="text-sm text-white tabular-nums">{Math.round(scan.risk_score ?? 0)} / 100</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500 mb-1">Recommended Action</dt>
+            <dt className="mb-1 text-xs text-slate-500">Recommended Action</dt>
             <dd><ActionBadge action={scan.recommended_action} /></dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500 mb-1">Summary</dt>
-            <dd className="text-sm text-gray-300 leading-relaxed">
-              {scan.summary ?? "—"}
-            </dd>
+            <dt className="mb-1 text-xs text-slate-500">Summary</dt>
+            <dd className="text-sm leading-relaxed text-slate-300">{scan.summary ?? "-"}</dd>
           </div>
           {scan.input_preview && (
             <div>
-              <dt className="text-xs text-gray-500 mb-1">Preview</dt>
-              <dd className="text-xs text-gray-400 font-mono bg-gray-800 rounded p-2 break-words">
+              <dt className="mb-1 text-xs text-slate-500">Preview</dt>
+              <dd className="font-mono-ui rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs break-words text-slate-300">
                 {scan.input_preview}
               </dd>
             </div>
           )}
           {Array.isArray(scan.entities) && scan.entities.length > 0 && (
             <div>
-              <dt className="text-xs text-gray-500 mb-2">
-                Entities ({scan.entities.length})
-              </dt>
+              <dt className="mb-2 text-xs text-slate-500">Entities ({scan.entities.length})</dt>
               <dd>
                 <ul className="space-y-2">
                   {scan.entities.map((ent, idx) => (
-                    <li
-                      key={idx}
-                      className="rounded-lg bg-gray-800 px-3 py-2 text-xs"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-gray-400 font-medium uppercase tracking-wide">
-                          {ent.entity_type ?? ent.type ?? "—"}
+                    <li key={idx} className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs">
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="font-medium uppercase tracking-wide text-slate-400">
+                          {ent.entity_type ?? ent.type ?? "-"}
                         </span>
                         <SeverityBadge severity={ent.severity} />
                       </div>
-                      <p className="text-gray-300 font-mono break-all">
-                        {ent.redacted_value ?? ent.value ?? "—"}
-                      </p>
+                      <p className="font-mono-ui break-all text-slate-300">{ent.redacted_value ?? ent.value ?? "-"}</p>
                     </li>
                   ))}
                 </ul>
@@ -160,7 +135,6 @@ function ScanDetailModal({ scan, onClose }) {
   );
 }
 
-/* ─── Main page ────────────────────────────────────────────────────── */
 export default function HistoryPage() {
   const [scans, setScans] = useState([]);
   const [total, setTotal] = useState(0);
@@ -197,11 +171,11 @@ export default function HistoryPage() {
     fetchScans();
   }, [fetchScans]);
 
-  /* Reset to page 1 when filters change */
   function handleSeverityFilter(val) {
     setSeverityFilter(val);
     setPage(1);
   }
+
   function handleTypeFilter(val) {
     setTypeFilter(val);
     setPage(1);
@@ -213,12 +187,35 @@ export default function HistoryPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        {/* ── Filter bar ── */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 space-y-3">
-          {/* Severity pills */}
+      <div className="space-y-6">
+        <section className="surface-panel-strong rounded-[30px] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="eyebrow">
+                <Sparkles className="h-3.5 w-3.5" />
+                Audit Trail
+              </div>
+              <h1 className="headline-balance mt-5 text-3xl font-bold text-white sm:text-4xl">
+                Scan history should read like evidence, not raw rows.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+                This view is where reviewers, auditors, and internal teams evaluate what happened, when it happened, and what action followed.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchScans}
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh history
+            </button>
+          </div>
+        </section>
+
+        <section className="surface-panel rounded-[28px] px-5 py-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium mr-1 flex items-center gap-1">
+            <span className="mr-1 flex items-center gap-1 text-xs font-medium text-slate-500">
               <Filter className="h-3 w-3" /> Severity
             </span>
             {SEVERITIES.map((s) => (
@@ -228,8 +225,8 @@ export default function HistoryPage() {
                 onClick={() => handleSeverityFilter(s)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   severityFilter === s
-                    ? "bg-cyber-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700"
+                    ? "bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950"
+                    : "bg-white/[0.03] text-slate-400 hover:text-white"
                 }`}
               >
                 {s}
@@ -237,10 +234,9 @@ export default function HistoryPage() {
             ))}
           </div>
 
-          {/* Type pills + refresh */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-gray-500 font-medium mr-1">Type</span>
+              <span className="mr-1 text-xs font-medium text-slate-500">Type</span>
               {SCAN_TYPES.map((t) => (
                 <button
                   key={t}
@@ -248,50 +244,41 @@ export default function HistoryPage() {
                   onClick={() => handleTypeFilter(t)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                     typeFilter === t
-                      ? "bg-cyber-600 text-white"
-                      : "bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700"
+                      ? "bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950"
+                      : "bg-white/[0.03] text-slate-400 hover:text-white"
                   }`}
                 >
                   {t}
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={fetchScans}
-              className="flex items-center gap-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-gray-800 px-3 py-1.5 transition"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </button>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400">
+              <Search className="h-3.5 w-3.5" />
+              {total} records
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* ── Error ── */}
-        {error && (
-          <div className="rounded-lg bg-red-950 border border-red-700 px-4 py-3">
-            <p className="text-sm text-red-400">{error}</p>
-          </div>
-        )}
+        {error && <div className="rounded-2xl border border-red-700 bg-red-950/30 px-4 py-3 text-sm text-red-200">{error}</div>}
 
-        {/* ── Table ── */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="surface-panel overflow-hidden rounded-[28px]">
           {loading ? (
-            <div className="p-6 space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-10 animate-pulse bg-gray-800 rounded-lg" />
-              ))}
+            <div className="p-10">
+              <LoadingSpinner size="lg" text="Loading history" />
             </div>
           ) : scans.length === 0 ? (
-            <EmptyState
-              icon={<Clock />}
-              title="No scans found"
-              message="No scans match your current filters. Try adjusting them or run a new scan."
-            />
+            <div className="p-6">
+              <EmptyState
+                icon={<Clock />}
+                title="No scans found"
+                message="No scans match your current filters. Adjust the filters or run a new scan."
+              />
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 border-b border-gray-800">
+                  <tr className="border-b border-white/10 text-left text-xs text-slate-500">
                     <th className="px-5 py-3 font-medium">Date / Time</th>
                     <th className="px-4 py-3 font-medium">Type</th>
                     <th className="px-4 py-3 font-medium">Severity</th>
@@ -302,21 +289,18 @@ export default function HistoryPage() {
                     <th className="px-4 py-3 font-medium">Details</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-white/10">
                   {scans.map((scan) => {
                     const risk = Math.round(scan.risk_score ?? 0);
                     return (
-                      <tr
-                        key={scan.id}
-                        className="hover:bg-gray-800/50 transition"
-                      >
-                        <td className="px-5 py-3 text-gray-400 whitespace-nowrap text-xs">
+                      <tr key={scan.scan_id ?? scan.id} className="hover:bg-white/[0.03]">
+                        <td className="px-5 py-3 whitespace-nowrap text-xs text-slate-400">
                           {formatDate(scan.created_at)}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5 text-gray-300 capitalize text-xs">
+                          <div className="flex items-center gap-1.5 text-xs capitalize text-slate-300">
                             <ScanTypeIcon type={scan.scan_type} />
-                            {scan.scan_type ?? "—"}
+                            {scan.scan_type ?? "-"}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -324,33 +308,30 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${riskBarColor(risk)}`}
-                                style={{ width: `${Math.min(risk, 100)}%` }}
-                              />
+                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-800">
+                              <div className={`h-full rounded-full ${riskBarColor(risk)}`} style={{ width: `${Math.min(risk, 100)}%` }} />
                             </div>
-                            <span className="text-xs text-gray-400 tabular-nums">{risk}</span>
+                            <span className="text-xs tabular-nums text-slate-400">{risk}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <ActionBadge action={scan.recommended_action} />
                         </td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center justify-center min-w-[1.5rem] h-5 rounded-full bg-gray-800 text-gray-300 text-xs font-medium tabular-nums px-1.5">
+                          <span className="inline-flex min-w-[1.75rem] items-center justify-center rounded-full bg-white/[0.05] px-2 py-1 text-xs font-medium tabular-nums text-slate-300">
                             {scan.total_entities ?? 0}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-400 max-w-[160px]">
-                          <span className="truncate block" title={scan.input_preview ?? ""}>
-                            {(scan.input_preview ?? "").slice(0, 60) || "—"}
+                        <td className="max-w-[160px] px-4 py-3 text-xs text-slate-400">
+                          <span className="block truncate" title={scan.input_preview ?? ""}>
+                            {(scan.input_preview ?? "").slice(0, 60) || "-"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <button
                             type="button"
                             onClick={() => setSelectedScan(scan)}
-                            className="flex items-center justify-center h-7 w-7 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
                             aria-label="View details"
                           >
                             <Eye className="h-4 w-4" />
@@ -365,11 +346,10 @@ export default function HistoryPage() {
           )}
         </div>
 
-        {/* ── Pagination ── */}
         {!loading && scans.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <p className="text-xs text-gray-500">
-              Showing {start}–{end} of {total} scans
+            <p className="text-xs text-slate-500">
+              Showing {start}-{end} of {total} scans
             </p>
 
             <div className="flex items-center gap-2">
@@ -377,18 +357,18 @@ export default function HistoryPage() {
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+                className="rounded-xl bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
               </button>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-slate-500">
                 {page} / {totalPages}
               </span>
               <button
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+                className="rounded-xl bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
               </button>
@@ -399,7 +379,7 @@ export default function HistoryPage() {
                   setPageSize(Number(e.target.value));
                   setPage(1);
                 }}
-                className="rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 focus:outline-none focus:border-cyan-500"
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
               >
                 {PAGE_SIZES.map((s) => (
                   <option key={s} value={s}>
@@ -412,10 +392,7 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {/* Detail modal */}
-      {selectedScan && (
-        <ScanDetailModal scan={selectedScan} onClose={() => setSelectedScan(null)} />
-      )}
+      {selectedScan && <ScanDetailModal scan={selectedScan} onClose={() => setSelectedScan(null)} />}
     </DashboardLayout>
   );
 }

@@ -25,6 +25,7 @@ import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import TermsOfService from "./pages/legal/TermsOfService";
 import Footer from "./components/layout/Footer";
 import Onboarding from "./pages/Onboarding";
+import { isAdminUser } from "./utils/access";
 import {
   OnboardingProvider,
   useOnboarding,
@@ -99,7 +100,7 @@ function AdminRoute({ children }) {
     );
   }
 
-  if (!user?.is_admin) {
+  if (!isAdminUser(user)) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Key } from "lucide-react";
+import { Copy, CreditCard, Key, ShieldCheck } from "lucide-react";
+import { authApi } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/layout/DashboardLayout";
 
@@ -26,26 +27,114 @@ function usageColor(pct) {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const [mfaPreferred, setMfaPreferred] = React.useState(
-    () => localStorage.getItem("mycyber_mfa_preferred") === "true"
-  );
+  const [usage, setUsage] = React.useState(null);
+  const [mfaStatus, setMfaStatus] = React.useState({ enabled: false, rollout_mode: "off" });
+  const [setupData, setSetupData] = React.useState(null);
+  const [verifyCode, setVerifyCode] = React.useState("");
+  const [disableCode, setDisableCode] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [message, setMessage] = React.useState("");
 
-  function handleMfaToggle(enabled) {
-    setMfaPreferred(enabled);
-    localStorage.setItem("mycyber_mfa_preferred", String(enabled));
+  const loadMfaStatus = React.useCallback(async () => {
+    const res = await authApi.getMfaStatus();
+    setMfaStatus(res.data);
+  }, []);
+
+  React.useEffect(() => {
+    loadMfaStatus().catch((err) => {
+      setError(err?.response?.data?.detail || "Failed to load MFA status.");
+    });
+  }, [loadMfaStatus]);
+
+  React.useEffect(() => {
+    authApi
+      .meFull()
+      .then((res) => {
+        setUsage(res.data?.usage || null);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function copyText(value) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setMessage("Copied to clipboard.");
+    } catch {
+      setError("Clipboard copy failed.");
+    }
   }
 
-  const planLimit = user?.plan_limit ?? 50;
-  const scanCountMonth = user?.scan_count_month ?? 0;
-  const usagePct = Math.min(Math.round((scanCountMonth / planLimit) * 100), 100);
-  const currentPlan = (user?.plan ?? "free").toLowerCase();
+  async function handleStartMfaSetup() {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const res = await authApi.beginMfaSetup();
+      setSetupData(res.data);
+      setMessage("Authenticator setup initialized. Add the account in your app, then verify.");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to start MFA setup.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleVerifyMfa(e) {
+    e.preventDefault();
+    if (verifyCode.length !== 6) {
+      setError("Enter a valid 6-digit authenticator code.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await authApi.verifyMfa(verifyCode);
+      await Promise.all([loadMfaStatus(), refreshUser()]);
+      setSetupData(null);
+      setVerifyCode("");
+      setMessage("MFA enabled for this account.");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to verify MFA code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisableMfa(e) {
+    e.preventDefault();
+    if (disableCode.length !== 6) {
+      setError("Enter a valid 6-digit authenticator code.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await authApi.disableMfa(disableCode);
+      await Promise.all([loadMfaStatus(), refreshUser()]);
+      setDisableCode("");
+      setSetupData(null);
+      setMessage("MFA disabled for this account.");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to disable MFA.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const planLimit = usage?.scan_limit ?? 0;
+  const scanCountMonth = usage?.scans_used ?? user?.scan_count_month ?? 0;
+  const usagePct = planLimit > 0 ? Math.min(Math.round((scanCountMonth / planLimit) * 100), 100) : 0;
+  const currentPlan = (usage?.plan ?? user?.plan ?? "free").toLowerCase();
+  const rolloutMode = String(mfaStatus.rollout_mode || "off").toUpperCase();
 
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* ── Profile ── */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-base font-semibold text-white mb-5">Profile</h2>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -56,7 +145,7 @@ export default function SettingsPage() {
               <p className="text-white font-medium truncate">
                 {user?.full_name ?? user?.email ?? "User"}
               </p>
-              <p className="text-sm text-gray-400 truncate">{user?.email ?? "—"}</p>
+              <p className="text-sm text-gray-400 truncate">{user?.email ?? "-"}</p>
               <PlanBadge plan={user?.plan} />
             </div>
             <button
@@ -68,7 +157,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── API Usage ── */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-base font-semibold text-white mb-5">API Usage</h2>
           <div className="space-y-3">
@@ -92,18 +180,27 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── Security ── */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-base font-semibold text-white mb-5">Security</h2>
+
+          {error && (
+            <div className="mb-4 rounded-md border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-200">
+              {error}
+            </div>
+          )}
+          {message && (
+            <div className="mb-4 rounded-md border border-emerald-800 bg-emerald-900/30 px-4 py-3 text-sm text-emerald-200">
+              {message}
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Key className="h-4 w-4 text-gray-400" />
                 <div>
                   <p className="text-sm text-white font-medium">Password</p>
-                  <p className="text-xs text-gray-500">
-                    Update your account password
-                  </p>
+                  <p className="text-xs text-gray-500">Update your account password</p>
                 </div>
               </div>
               <button
@@ -125,43 +222,134 @@ export default function SettingsPage() {
             <div className="border-t border-gray-800 pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm text-white font-medium">JWT Token Expiry</p>
-                <p className="text-xs text-gray-500">
-                  Tokens expire after 24 hours of inactivity
-                </p>
+                <p className="text-xs text-gray-500">Tokens expire after 24 hours of inactivity</p>
               </div>
               <span className="text-xs text-gray-400">24h</span>
             </div>
 
-            <div className="border-t border-gray-800 pt-4 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm text-white font-medium">Multi-Factor Authentication (MFA)</p>
-                <p className="text-xs text-gray-500">
-                  Enable app-based 2FA preference now. Enforcement in login will be enabled in a future release.
-                </p>
-                <p className="mt-1 text-[11px] text-cyan-400">Status: MFA groundwork enabled (not enforced yet)</p>
+            <div className="border-t border-gray-800 pt-4 space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-cyan-400" />
+                    <p className="text-sm text-white font-medium">Multi-Factor Authentication (MFA)</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Authenticator-app based verification using the live backend MFA flow.
+                  </p>
+                  <p className="text-[11px] text-cyan-400">
+                    Rollout: {rolloutMode} • Account status: {mfaStatus.enabled ? "ENABLED" : "DISABLED"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={mfaStatus.enabled ? undefined : handleStartMfaSetup}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    mfaStatus.enabled
+                      ? "bg-emerald-700/30 text-emerald-300 border border-emerald-700"
+                      : "bg-cyber-600 hover:bg-cyber-700 text-white disabled:opacity-60"
+                  }`}
+                >
+                  {mfaStatus.enabled ? "Enabled" : "Set up MFA"}
+                </button>
               </div>
-              <label className="relative inline-flex cursor-pointer items-center">
-                <input
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={mfaPreferred}
-                  onChange={(e) => handleMfaToggle(e.target.checked)}
-                />
-                <div className="peer h-6 w-11 rounded-full bg-gray-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-cyber-600 peer-checked:after:translate-x-full" />
-              </label>
+
+              {!mfaStatus.enabled && setupData && (
+                <div className="rounded-lg border border-cyan-900 bg-cyan-950/20 p-4 space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white">Step 1: Add this account to your authenticator app</p>
+                    <div className="rounded-lg bg-gray-950 border border-gray-800 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500">Secret</p>
+                          <p className="font-mono text-xs text-gray-200 break-all">{setupData.secret}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyText(setupData.secret)}
+                          className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:text-white"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-gray-950 border border-gray-800 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500">Provisioning URI</p>
+                          <p className="font-mono text-xs text-gray-200 break-all">{setupData.provisioning_uri}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyText(setupData.provisioning_uri)}
+                          className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:text-white"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleVerifyMfa} className="space-y-3">
+                    <p className="text-sm font-medium text-white">Step 2: Verify the current 6-digit code</p>
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={verifyCode}
+                        onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="123456"
+                        className="flex-1 rounded-lg bg-gray-800 border border-gray-700 text-white px-4 py-2.5 text-sm"
+                      />
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {mfaStatus.enabled && (
+                <form onSubmit={handleDisableMfa} className="rounded-lg border border-amber-900 bg-amber-950/20 p-4 space-y-3">
+                  <p className="text-sm font-medium text-white">Disable MFA</p>
+                  <p className="text-xs text-gray-400">
+                    Enter a current authenticator code to remove MFA from this account.
+                  </p>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={disableCode}
+                      onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="123456"
+                      className="flex-1 rounded-lg bg-gray-800 border border-gray-700 text-white px-4 py-2.5 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busy}
+                      className="rounded-lg bg-red-700 hover:bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    >
+                      Disable
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </section>
 
-        {/* ── Plans ── */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-base font-semibold text-white">Plans &amp; Billing</h2>
             <PlanBadge plan={user?.plan} />
           </div>
           <p className="text-sm text-gray-400 mb-4">
-            Manage your subscription, view usage, and upgrade your plan from the
-            billing page.
+            Manage your subscription, view usage, and upgrade your plan from the billing page.
           </p>
           <button
             type="button"

@@ -17,15 +17,15 @@ export default function EmptyState({
   onAction,
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+    <div className="surface-panel flex flex-col items-center justify-center rounded-[28px] px-6 py-16 text-center">
       {icon && (
-        <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gray-800 text-gray-500 mb-5 [&>svg]:h-8 [&>svg]:w-8">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-400/15 bg-cyan-400/10 text-cyan-200 [&>svg]:h-8 [&>svg]:w-8">
           {icon}
         </div>
       )}
-      <h3 className="text-base font-semibold text-white mb-2">{title}</h3>
+      <h3 className="mb-2 text-base font-semibold text-white">{title}</h3>
       {message && (
-        <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+        <p className="max-w-xs text-sm leading-relaxed text-slate-400">
           {message}
         </p>
       )}
@@ -33,7 +33,7 @@ export default function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-6 rounded-lg bg-cyber-600 hover:bg-cyber-700 text-white text-sm font-semibold px-5 py-2 transition"
+          className="mt-6 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:translate-y-[-2px]"
         >
           {actionLabel}
         </button>

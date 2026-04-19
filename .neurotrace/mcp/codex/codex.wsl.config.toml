@@ -1,0 +1,6 @@
+[mcp_servers.neurotrace]
+command = "python3"
+args = ["/mnt/c/Users/Feroz Khan/.vscode/extensions/blackirontechnologies.neurotrace-1.2.5/bin/neurotrace.py", "--mcp", "--workspace", "/mnt/d/Mycyber/MyCyber-Project"]
+startup_timeout_sec = 45
+tool_timeout_sec = 120
+enabled = true

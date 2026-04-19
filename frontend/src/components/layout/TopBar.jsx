@@ -32,11 +32,16 @@ export default function TopBar({
   const initials = getInitials(email);
 
   return (
-    <header className="flex items-center justify-between h-16 px-6 bg-gray-900 border-b border-gray-800 shrink-0">
+    <header className="surface-panel-strong flex h-16 shrink-0 items-center justify-between border-b px-6">
       {/* Page title */}
-      <h1 className="text-base font-semibold text-white truncate">
-        {pageTitle}
-      </h1>
+      <div className="min-w-0">
+        <p className="font-mono-ui text-[10px] uppercase tracking-[0.24em] text-cyan-300/70">
+          Secure Workspace
+        </p>
+        <h1 className="truncate text-base font-semibold text-white">
+          {pageTitle}
+        </h1>
+      </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
@@ -44,7 +49,7 @@ export default function TopBar({
         <button
           type="button"
           onClick={onSearchClick}
-          className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+          className="hover-lift flex h-9 w-9 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-gray-400"
           aria-label="Search"
         >
           <Search className="h-4 w-4" />
@@ -54,7 +59,7 @@ export default function TopBar({
         <button
           type="button"
           onClick={onAlertsClick}
-          className="relative flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+          className="hover-lift relative flex h-9 w-9 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-gray-400"
           aria-label={`Alerts${alertCount > 0 ? ` (${alertCount} unread)` : ""}`}
         >
           <Bell className="h-4 w-4" />
@@ -67,7 +72,7 @@ export default function TopBar({
 
         {/* User avatar */}
         <div
-          className="flex items-center justify-center h-8 w-8 rounded-full bg-cyber-700 text-white text-xs font-bold select-none cursor-default"
+          className="flex h-9 w-9 cursor-default items-center justify-center rounded-full border border-cyan-400/20 bg-gradient-to-br from-cyan-500 to-sky-600 text-xs font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.28)] select-none"
           title={email}
         >
           {initials}

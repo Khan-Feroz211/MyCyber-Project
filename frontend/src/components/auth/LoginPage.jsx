@@ -18,6 +18,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaRequired, setMfaRequired] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -25,12 +27,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, mfaRequired ? mfaCode : undefined);
       navigate("/dashboard");
     } catch (err) {
+      const detail = err?.response?.data?.detail;
+      if (detail?.mfa_required) {
+        setMfaRequired(true);
+        setError(detail?.message || "Multi-factor code is required.");
+        return;
+      }
       const message =
         err?.response?.data?.message ||
-        err?.response?.data?.detail ||
+        detail ||
         err?.message ||
         "Invalid email or password.";
       setError(typeof message === "string" ? message : "Invalid email or password.");
@@ -152,6 +160,28 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {mfaRequired && (
+              <div>
+                <label
+                  htmlFor="mfaCode"
+                  className="block text-sm font-medium text-gray-300 mb-1.5"
+                >
+                  Authenticator code
+                </label>
+                <input
+                  id="mfaCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                  className="w-full rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+            )}
 
             {/* Submit */}
             <button
