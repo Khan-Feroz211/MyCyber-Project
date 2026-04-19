@@ -102,10 +102,10 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <header className="sticky top-0 z-40 border-b border-gray-800/80 bg-gray-950/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3">
             <ShieldLogo />
-            <span className="text-lg font-semibold tracking-tight">MyCyber DLP</span>
+            <span className="text-base font-semibold tracking-tight sm:text-lg">MyCyber DLP</span>
           </Link>
 
           <nav className="hidden items-center gap-3 md:flex">
@@ -134,18 +134,18 @@ export default function LandingPage() {
         </div>
 
         {menuOpen && (
-          <div className="border-t border-gray-800 bg-gray-950 px-6 py-4 md:hidden">
+          <div className="border-t border-gray-800 bg-gray-950 px-4 py-4 sm:px-6 md:hidden">
             <div className="flex flex-col gap-3">
               <Link
                 to="/login"
-                className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200"
+                className="w-full rounded-lg border border-gray-700 px-4 py-2 text-center text-sm font-medium text-gray-200"
                 onClick={() => setMenuOpen(false)}
               >
                 Sign in
               </Link>
               <Link
                 to="/register"
-                className="rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-gray-950"
+                className="w-full rounded-lg bg-green-500 px-4 py-2 text-center text-sm font-semibold text-gray-950"
                 onClick={() => setMenuOpen(false)}
               >
                 Start free
@@ -156,10 +156,10 @@ export default function LandingPage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden px-6 pb-20 pt-20 lg:px-8">
+        <section className="relative overflow-hidden px-4 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.2),_transparent_45%)]" />
           <div className="relative mx-auto max-w-6xl text-center">
-            <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
               Stop Data Leaks Before They Cost You
             </h1>
             <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-gray-400 sm:text-lg">
@@ -170,13 +170,13 @@ export default function LandingPage() {
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/register"
-                className="rounded-lg bg-green-500 px-7 py-3 text-sm font-semibold text-gray-950 transition hover:bg-green-400"
+                className="w-full max-w-xs rounded-lg bg-green-500 px-7 py-3 text-sm font-semibold text-gray-950 transition hover:bg-green-400 sm:w-auto sm:max-w-none"
               >
                 Start free - no card needed
               </Link>
               <a
                 href="#demo"
-                className="rounded-lg border border-gray-600 px-7 py-3 text-sm font-semibold text-gray-100 transition hover:border-gray-400"
+                className="w-full max-w-xs rounded-lg border border-gray-600 px-7 py-3 text-sm font-semibold text-gray-100 transition hover:border-gray-400 sm:w-auto sm:max-w-none"
               >
                 See a demo
               </a>
@@ -191,7 +191,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-gray-900 bg-gray-950 px-6 py-20 lg:px-8">
+        <section className="border-y border-gray-900 bg-gray-950 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
               One leaked CNIC can cost you everything
@@ -210,7 +210,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="demo" className="px-6 py-20 lg:px-8">
+        <section id="demo" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-3xl font-bold text-white sm:text-4xl">How It Works</h2>
             <div className="mx-auto mt-12 max-w-5xl">
@@ -229,7 +229,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-gray-900 bg-gray-950 px-6 py-20 lg:px-8">
+        <section className="border-y border-gray-900 bg-gray-950 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-3xl font-bold text-white sm:text-4xl">What We Detect</h2>
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -245,7 +245,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="px-6 py-20 lg:px-8">
+        <section id="pricing" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-3xl font-bold text-white sm:text-4xl">Pricing</h2>
             <p className="mt-4 text-center text-sm text-green-300">Pay annually, save 2 months</p>
@@ -280,7 +280,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-gray-900 bg-gray-950 px-6 py-20 lg:px-8">
+        <section className="border-y border-gray-900 bg-gray-950 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <div className="mx-auto max-w-6xl text-center">
             <h2 className="text-2xl font-bold text-white">Used by security teams at:</h2>
             <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -297,7 +297,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="px-6 py-20 lg:px-8">
+        <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <div className="mx-auto max-w-4xl">
             <h2 className="text-center text-3xl font-bold text-white sm:text-4xl">FAQ</h2>
             <div className="mt-10 space-y-4">
@@ -311,13 +311,13 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="px-6 pb-20 lg:px-8">
-          <div className="mx-auto max-w-6xl rounded-3xl bg-gradient-to-r from-green-900 via-green-800 to-emerald-700 p-10 text-center shadow-2xl">
-            <h2 className="text-3xl font-bold text-white">Start detecting leaks in 60 seconds</h2>
+        <section className="px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8">
+          <div className="mx-auto max-w-6xl rounded-3xl bg-gradient-to-r from-green-900 via-green-800 to-emerald-700 p-6 text-center shadow-2xl sm:p-10">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">Start detecting leaks in 60 seconds</h2>
             <p className="mt-3 text-sm text-green-100">Free plan - no credit card required</p>
             <Link
               to="/register"
-              className="mt-6 inline-flex rounded-lg bg-white px-7 py-3 text-sm font-semibold text-green-900 transition hover:bg-green-50"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-white px-7 py-3 text-sm font-semibold text-green-900 transition hover:bg-green-50 sm:w-auto"
             >
               Create free account
             </Link>

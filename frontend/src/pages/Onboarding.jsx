@@ -121,7 +121,7 @@ export default function Onboarding() {
   }, [currentStep, scanResult]);
 
   return (
-    <div className="min-h-screen bg-gray-950 px-4 py-8 text-gray-100 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-950 px-4 py-6 text-gray-100 sm:px-6 sm:py-8 lg:px-8">
       <main className="mx-auto w-full max-w-2xl">
         <div className="mb-4 overflow-hidden rounded-full bg-gray-800">
           <div
@@ -138,7 +138,7 @@ export default function Onboarding() {
                 🛡️
               </div>
             </div>
-            <h1 className="text-center text-3xl font-bold text-white">Welcome to MyCyber</h1>
+            <h1 className="text-center text-2xl font-bold text-white sm:text-3xl">Welcome to MyCyber</h1>
             <p className="mt-3 text-center text-gray-300">Welcome, {user?.email || "there"}!</p>
             <p className="mt-2 text-center text-sm text-gray-400">
               You are on the Free plan - 100 scans/month
@@ -167,13 +167,13 @@ export default function Onboarding() {
 
         {currentStep === 2 && (
           <StepCard>
-            <h2 className="text-2xl font-bold text-white">Scan something now</h2>
+            <h2 className="text-xl font-bold text-white sm:text-2xl">Scan something now</h2>
             <p className="mt-2 text-sm text-gray-400">Paste any text to scan</p>
 
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              rows={7}
+              rows={8}
               className="mt-5 w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-sm text-gray-100 outline-none transition focus:border-green-500 focus:ring-1 focus:ring-green-500"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -191,7 +191,7 @@ export default function Onboarding() {
 
             {scanResult && (
               <div className="mt-4 rounded-lg border border-green-700/60 bg-green-900/20 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm text-gray-300">Severity</span>
                   <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white">
                     {scanResult.severity || "CRITICAL"}
@@ -241,7 +241,7 @@ export default function Onboarding() {
                 ✓
               </div>
             </div>
-            <h2 className="text-center text-3xl font-bold text-white">You&apos;re protected</h2>
+            <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">You&apos;re protected</h2>
             <p className="mt-3 text-center text-gray-300">Your first scan is complete</p>
             <p className="mt-2 text-center text-sm text-gray-400">
               MyCyber detected: CNIC, EMAIL, API_KEY

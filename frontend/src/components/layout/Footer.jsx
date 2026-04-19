@@ -41,8 +41,8 @@ const FOOTER_COLUMNS = [
 export default function Footer() {
   return (
     <footer className="border-t border-gray-800 bg-gray-950">
-      <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-2 sm:gap-10 sm:text-left md:grid-cols-4">
           {FOOTER_COLUMNS.map((column) => (
             <div key={column.title}>
               <h3 className="text-sm font-semibold tracking-wide text-white">
@@ -63,7 +63,7 @@ export default function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-10 border-t border-gray-800 pt-6 text-sm text-gray-500">
+        <div className="mt-10 border-t border-gray-800 pt-6 text-center text-sm text-gray-500 sm:text-left">
           © 2025 MyCyber. Built in Pakistan 🇵🇰
         </div>
       </div>
