@@ -41,6 +41,7 @@ Thumbs.db
 
 # ── Node / frontend ───────────────────────────────────────────────────────────
 node_modules/
+.npm-cache/
 dist/
 build/
 

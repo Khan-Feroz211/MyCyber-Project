@@ -120,6 +120,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+    // Auto-refresh every 30 seconds for real-time data
+    const interval = setInterval(fetchData, 30_000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   async function handleAcknowledge(alertId) {

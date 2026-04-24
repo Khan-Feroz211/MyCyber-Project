@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import Alert, ScanRecord, User
 from ..models.schemas import AlertOut, AlertsResponse, ScanResponse
+from .telegram_service import notify_scan_alert
 
 ALERT_SEVERITIES: set[str] = {"CRITICAL", "HIGH"}
 
@@ -39,6 +40,17 @@ async def create_alert_if_needed(
     )
     db.add(alert)
     await db.flush()
+
+    # Fire Telegram notification asynchronously (best-effort)
+    await notify_scan_alert(
+        severity=severity,
+        scan_type=scan_record.scan_type,
+        entity_count=scan_response.total_entities,
+        summary=scan_response.summary,
+        user_email=user.email,
+        scan_id=scan_record.scan_id,
+    )
+
     return alert
 
 

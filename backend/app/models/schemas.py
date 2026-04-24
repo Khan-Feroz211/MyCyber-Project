@@ -131,6 +131,15 @@ class MFAVerifyRequest(BaseModel):
     code: str = Field(..., min_length=6, max_length=6)
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+
 class MFAStatusResponse(BaseModel):
     enabled: bool
     rollout_mode: str
@@ -314,3 +323,34 @@ class PlanCard(BaseModel):
     scan_limit: int
     features: list[str]
     is_current: bool
+
+
+# ---------------------------------------------------------------------------
+# Scheduled scan schemas
+# ---------------------------------------------------------------------------
+
+
+class ScheduledScanCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    scan_type: str = Field(..., pattern="^(text|file|network)$")
+    target: str = Field(..., min_length=1)
+    schedule_cron: str = Field(..., min_length=1, max_length=50)
+
+
+class ScheduledScanOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    job_id: str
+    name: str
+    scan_type: str
+    target: str
+    schedule_cron: str
+    is_active: bool
+    last_run_at: Optional[datetime]
+    next_run_at: Optional[datetime]
+    created_at: datetime
+
+
+class ScheduledScanListResponse(BaseModel):
+    items: list[ScheduledScanOut]
+    total: int

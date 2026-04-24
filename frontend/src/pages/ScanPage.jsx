@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import {
   AlertCircle,
+  Calendar,
   CheckCircle,
   Globe,
   HardDrive,
@@ -11,6 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 import { scanApi } from "../api/scans";
+import { scheduledScanApi } from "../api/scheduledScans";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import SeverityBadge from "../components/ui/SeverityBadge";
 import ActionBadge from "../components/ui/ActionBadge";
@@ -182,6 +184,15 @@ export default function ScanPage() {
   const [destination, setDestination] = useState("");
   const [protocol, setProtocol] = useState("HTTP");
 
+  /* Scheduled scan state */
+  const [schedName, setSchedName] = useState("");
+  const [schedTarget, setSchedTarget] = useState("");
+  const [schedType, setSchedType] = useState("text");
+  const [schedCron, setSchedCron] = useState("0 9 * * *");
+  const [schedJobs, setSchedJobs] = useState([]);
+  const [schedLoading, setSchedLoading] = useState(false);
+  const [schedMsg, setSchedMsg] = useState("");
+
   /* Shared state */
   const [loading, setLoading] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -190,6 +201,58 @@ export default function ScanPage() {
   function resetResult() {
     setScanResult(null);
     setScanError("");
+  }
+
+  async function loadScheduledJobs() {
+    try {
+      const res = await scheduledScanApi.list();
+      setSchedJobs(res.data.items || []);
+    } catch {}
+  }
+
+  async function handleCreateScheduled(e) {
+    e.preventDefault();
+    setSchedLoading(true);
+    setSchedMsg("");
+    try {
+      await scheduledScanApi.create({
+        name: schedName,
+        scan_type: schedType,
+        target: schedTarget,
+        schedule_cron: schedCron,
+      });
+      setSchedMsg("Scheduled scan created.");
+      setSchedName("");
+      setSchedTarget("");
+      await loadScheduledJobs();
+    } catch (err) {
+      setSchedMsg(err?.response?.data?.detail || "Failed to create scheduled scan.");
+    } finally {
+      setSchedLoading(false);
+    }
+  }
+
+  async function toggleJob(jobId) {
+    try {
+      await scheduledScanApi.toggle(jobId);
+      await loadScheduledJobs();
+    } catch {}
+  }
+
+  async function deleteJob(jobId) {
+    try {
+      await scheduledScanApi.delete(jobId);
+      await loadScheduledJobs();
+    } catch {}
+  }
+
+  async function runJobNow(jobId) {
+    try {
+      await scheduledScanApi.runNow(jobId);
+      setSchedMsg("Scan executed.");
+    } catch (err) {
+      setSchedMsg(err?.response?.data?.detail || "Run failed.");
+    }
   }
 
   /* ── Text scan ── */
@@ -293,6 +356,12 @@ export default function ScanPage() {
             icon={HardDrive}
             active={activeTab === "external-drive"}
             onClick={() => { setActiveTab("external-drive"); resetResult(); }}
+          />
+          <TabButton
+            label="Scheduled"
+            icon={Calendar}
+            active={activeTab === "scheduled"}
+            onClick={() => { setActiveTab("scheduled"); resetResult(); loadScheduledJobs(); }}
           />
         </div>
 
@@ -543,6 +612,114 @@ export default function ScanPage() {
                 {loading ? "Analyzing with AI…" : "Scan Network"}
               </button>
             </form>
+          )}
+
+          {/* SCHEDULED TAB */}
+          {activeTab === "scheduled" && (
+            <div className="space-y-6">
+              <form onSubmit={handleCreateScheduled} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Job name</label>
+                    <input
+                      type="text"
+                      value={schedName}
+                      onChange={(e) => setSchedName(e.target.value)}
+                      placeholder="Daily API key check"
+                      required
+                      className="w-full rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Scan type</label>
+                    <select
+                      value={schedType}
+                      onChange={(e) => setSchedType(e.target.value)}
+                      className="w-full rounded-lg bg-gray-800 border border-gray-700 text-gray-200 text-sm px-3 py-2 focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="text">Text</option>
+                      <option value="file">File</option>
+                      <option value="network">Network</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Target / payload</label>
+                  <textarea
+                    rows={4}
+                    value={schedTarget}
+                    onChange={(e) => setSchedTarget(e.target.value)}
+                    placeholder="Paste the recurring text or payload to scan..."
+                    required
+                    className="w-full rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 px-4 py-3 text-sm resize-y focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Cron expression</label>
+                  <input
+                    type="text"
+                    value={schedCron}
+                    onChange={(e) => setSchedCron(e.target.value)}
+                    placeholder="0 9 * * *"
+                    required
+                    className="w-full rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 px-3 py-2 text-sm font-mono focus:outline-none focus:border-cyan-500 transition"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Example: 0 9 * * * = every day at 9:00 AM UTC</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={schedLoading || !schedName.trim() || !schedTarget.trim()}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-cyber-600 hover:bg-cyber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 text-sm transition"
+                >
+                  {schedLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {schedLoading ? "Saving…" : "Create Scheduled Scan"}
+                </button>
+                {schedMsg && (
+                  <p className={`text-sm ${schedMsg.includes("Failed") || schedMsg.includes("failed") || schedMsg.includes("Run failed") ? "text-red-400" : "text-green-400"}`}>
+                    {schedMsg}
+                  </p>
+                )}
+              </form>
+
+              {schedJobs.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-white">Active jobs</h3>
+                  <div className="space-y-2">
+                    {schedJobs.map((job) => (
+                      <div key={job.job_id} className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-950 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-white">{job.name}</p>
+                          <p className="text-xs text-gray-500">{job.scan_type} · {job.schedule_cron} · {job.is_active ? "Active" : "Paused"}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => runJobNow(job.job_id)}
+                            className="rounded-md bg-cyan-900 px-2 py-1 text-xs font-medium text-cyan-300 hover:bg-cyan-800 transition"
+                          >
+                            Run now
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleJob(job.job_id)}
+                            className="rounded-md bg-gray-800 px-2 py-1 text-xs font-medium text-gray-300 hover:bg-gray-700 transition"
+                          >
+                            {job.is_active ? "Pause" : "Resume"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteJob(job.job_id)}
+                            className="rounded-md bg-red-900/40 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-900/60 transition"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

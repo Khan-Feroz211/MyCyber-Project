@@ -23,11 +23,14 @@ from ..models.schemas import (
 from ..services import billing_service
 from ..services.auth import (
     create_access_token,
+    create_reset_token,
+    decode_reset_token,
     hash_password,
     verify_password,
 )
 from ..services.mfa import build_otpauth_uri, generate_totp_secret, verify_totp_code
 from ..services.security_audit import log_security_event
+from ..models.schemas import PasswordResetRequest, PasswordResetConfirm
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
@@ -343,3 +346,78 @@ async def mfa_disable(
         enabled=False,
         rollout_mode=settings.mfa_rollout_mode,
     )
+
+
+# ---------------------------------------------------------------------------
+# Password Reset
+# ---------------------------------------------------------------------------
+
+
+@router.post("/password/reset/request", status_code=status.HTTP_202_ACCEPTED)
+async def password_reset_request(
+    payload: PasswordResetRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Request a password reset. Always returns 202 to prevent email enumeration.
+
+    In production, this would send an email with a reset link.
+    For now, the reset token is returned directly (development only).
+    """
+    result = await db.execute(select(User).where(User.email == payload.email))
+    user: User | None = result.scalars().first()
+
+    if not user or not user.is_active:
+        # Return success even if user doesn't exist to prevent enumeration
+        return {"message": "If an account exists with this email, a reset link has been sent."}
+
+    reset_token = create_reset_token(user.id, user.email)
+
+    await log_security_event(
+        db,
+        event_type="password_reset_requested",
+        severity="INFO",
+        user=user,
+    )
+
+    # TODO: Send email with reset link containing the token
+    # For development, return the token directly
+    return {
+        "message": "If an account exists with this email, a reset link has been sent.",
+        "reset_token": reset_token,  # Remove this in production
+    }
+
+
+@router.post("/password/reset/confirm", status_code=status.HTTP_200_OK)
+async def password_reset_confirm(
+    payload: PasswordResetConfirm,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Reset password with a valid reset token."""
+    try:
+        token_data = decode_reset_token(payload.token)
+    except HTTPException as e:
+        return {"message": "Invalid or expired reset token."}
+
+    result = await db.execute(select(User).where(User.id == token_data.user_id))
+    user: User | None = result.scalars().first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user or account inactive.",
+        )
+
+    user.hashed_password = hash_password(payload.new_password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+
+    await log_security_event(
+        db,
+        event_type="password_reset_completed",
+        severity="INFO",
+        user=user,
+    )
+
+    await db.flush()
+
+    return {"message": "Password has been reset successfully."}

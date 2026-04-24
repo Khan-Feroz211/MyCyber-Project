@@ -59,4 +59,15 @@ export const authApi = {
   disableMfa(code) {
     return client.post("/api/v1/auth/mfa/disable", { code });
   },
+
+  requestPasswordReset(email) {
+    return client.post("/api/v1/auth/password/reset/request", { email });
+  },
+
+  confirmPasswordReset(token, newPassword) {
+    return client.post("/api/v1/auth/password/reset/confirm", {
+      token,
+      new_password: newPassword,
+    });
+  },
 };

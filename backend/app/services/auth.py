@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -12,6 +13,7 @@ from ..models.schemas import TokenData
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
+RESET_TOKEN_EXPIRE_HOURS = 1
 
 _logger = logging.getLogger(__name__)
 
@@ -67,6 +69,45 @@ def decode_access_token(token: str) -> TokenData:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except JWTError:
+        raise credentials_exception
+
+
+def create_reset_token(user_id: int, email: str) -> str:
+    """Create a short-lived JWT for password reset."""
+    now = datetime.now(tz=timezone.utc)
+    payload = {
+        "sub": str(user_id),
+        "email": email,
+        "type": "password_reset",
+        "iat": now,
+        "exp": now + timedelta(hours=RESET_TOKEN_EXPIRE_HOURS),
+    }
+    return jwt.encode(payload, _SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_reset_token(token: str) -> TokenData:
+    """Decode a password reset token, raising HTTP 401 on failure."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired reset token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, _SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "password_reset":
+            raise credentials_exception
+        user_id_raw: str | None = payload.get("sub")
+        email: str | None = payload.get("email")
+        if user_id_raw is None or email is None:
+            raise credentials_exception
+        return TokenData(user_id=int(user_id_raw), email=email, tenant_id=payload.get("tenant_id", ""))
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Reset token has expired. Please request a new one.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except JWTError:
