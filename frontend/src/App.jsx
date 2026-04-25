@@ -152,8 +152,7 @@ function ContactPage() {
       <main className="mx-auto max-w-4xl px-6 py-16 lg:px-8">
         <h1 className="text-3xl font-bold text-white">Contact</h1>
         <p className="mt-4 text-gray-400">
-          Reach us at support@mycyber.pk for customer support and sales@mycyber.pk
-          for enterprise onboarding.
+          Reach us at www.ferozkhan@outlook.com for customer support and enterprise onboarding.
         </p>
       </main>
       <Footer />

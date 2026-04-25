@@ -190,7 +190,7 @@ def build_password_reset_email(reset_token: str, user_email: str) -> tuple[str, 
         </div>
         <div class="footer">
             <p>MyCyber DLP — AI-powered Data Leakage Prevention for Pakistan</p>
-            <p>If you need help, contact us at support@mycyber.pk</p>
+            <p>If you need help, contact us at www.ferozkhan@outlook.com</p>
         </div>
     </div>
 </body>
@@ -208,7 +208,7 @@ Click the link below to reset your password:
 
 This link expires in 1 hour.
 
-If you didn't request this reset, please ignore this email or contact support@mycyber.pk.
+If you didn't request this reset, please ignore this email or contact www.ferozkhan@outlook.com.
 
 ---
 MyCyber DLP — AI-powered Data Leakage Prevention for Pakistan
