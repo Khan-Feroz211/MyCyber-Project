@@ -131,11 +131,21 @@ graph LR
 ### ⚡ Latency Benchmarks
 
 ```mermaid
-xychart-beta
-    title "API Response Times (p95)"
-    x-axis ["Text Scan", "File Scan (<1MB)", "File Scan (<10MB)", "Auth Login", "Dashboard Load"]
-    y-axis "Response Time (ms)" 0 --> 2000
-    bar [450, 800, 1500, 120, 180]
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0891b2', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0891b2', 'lineColor': '#64748b', 'secondaryColor': '#e0e0e0', 'tertiaryColor': '#fff'}}}%%
+graph LR
+    subgraph "API Latency (p95)"
+        direction TB
+        A[🔤 Text Scan<br/>450ms] --> B[📄 File &lt;1MB<br/>800ms]
+        B --> C[📦 File &lt;10MB<br/>1500ms]
+        C --> D[🔐 Login<br/>120ms]
+        D --> E[📊 Dashboard<br/>180ms]
+    end
+    
+    style A fill:#FF6B6B,color:#fff
+    style B fill:#FFA94D,color:#000
+    style C fill:#FFD43B,color:#000
+    style D fill:#69DB7C,color:#000
+    style E fill:#4DABF7,color:#fff
 ```
 
 | Operation | Avg | p95 | p99 |
@@ -149,14 +159,15 @@ xychart-beta
 ### 🧪 Test Coverage
 
 ```mermaid
-pie showData
+%%{init: {'theme': 'base'}}%%
+pie
     title Test Coverage by Module
-    "Auth & Security" : 75
-    "Scan Engine" : 60
-    "Billing & Payments" : 45
-    "Alerts & Notifications" : 70
-    "Scheduled Tasks" : 65
-    "Reports & Export" : 80
+    "✅ Auth & Security (75%)" : 75
+    "🟡 Scan Engine (60%)" : 60
+    "🔴 Billing (45%)" : 45
+    "✅ Alerts (70%)" : 70
+    "🟡 Scheduled (65%)" : 65
+    "✅ Reports (80%)" : 80
 ```
 
 | Module | Tests | Coverage | Status |
