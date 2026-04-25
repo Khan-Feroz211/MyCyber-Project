@@ -8,8 +8,13 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB)](https://react.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Made in Pakistan](https://img.shields.io/badge/Made%20in-Pakistan-%23006E4E)](https://mycyber.pk)
+[![Documentation](https://img.shields.io/badge/docs-interactive-blue)](https://mycyber.pk/docs)
 
-> 🛡️ **Stop data leaks before they cost you.**
+> � **Full interactive diagrams, architecture visuals, and performance charts are available at: [mycyber.pk/docs](https://mycyber.pk/docs)**
+
+*GitHub Markdown has rendering limitations for complex diagrams. For the best visual experience with interactive architecture diagrams and performance visualizations, please visit our documentation site above.*
+
+> �🛡️ **Stop data leaks before they cost you.**
 > 
 > Detect **CNIC**, **IBAN**, **API keys**, and **8 more sensitive data types** across text, files, and network traffic in **under 1 second**.
 
@@ -88,23 +93,13 @@ Payment via Safepay (JazzCash, Easypaisa, bank transfer)
 
 ### Feature Comparison
 
-```mermaid
-graph LR
-    Free[Free 100 scans] --> Pro[Pro 10K scans]
-    Pro --> Enterprise[Enterprise Unlimited]
-```
+- **Free**: 100 scans/mo, Text + File scanning, Email alerts
+- **Pro**: 10K scans/mo, All scan types, Telegram alerts, Scheduled scans, API access
+- **Enterprise**: Unlimited scans, Custom rules, SSO/SAML, On-premise option, 99.9% SLA
 
 ## 📊 Performance & Test Coverage
 
 ### ⚡ Latency Benchmarks
-
-```mermaid
-graph LR
-    A[Text 450ms] --> B[File 800ms]
-    B --> C[Large 1500ms]
-    C --> D[Login 120ms]
-    D --> E[Dash 180ms]
-```
 
 | Operation | Avg | p95 | p99 |
 |-----------|-----|-----|-----|
@@ -115,15 +110,6 @@ graph LR
 | 📊 Dashboard Load | 150ms | 180ms | 300ms |
 
 ### 🧪 Test Coverage
-
-```mermaid
-graph LR
-    A[Auth 75] --> B[Scan 60]
-    B --> C[Billing 45]
-    C --> D[Alerts 70]
-    D --> E[Scheduled 65]
-    E --> F[Reports 80]
-```
 
 | Module | Tests | Coverage | Status |
 |--------|-------|----------|--------|
@@ -144,46 +130,46 @@ pytest tests/ -v --cov=app --cov-report=html
 
 ### High-Level Architecture
 
-```mermaid
-graph TB
-    User[User] --> Frontend[React]
-    Frontend --> API[FastAPI]
-    API --> Auth[JWT MFA]
-    API --> Scan[NER Regex]
-    API --> Celery[Celery]
-    API --> Email[Email Telegram]
-    Scan --> Hugging[HuggingFace]
-    Scan --> Regex[Regex]
-    API --> Redis[Redis]
-    API --> PG[PostgreSQL]
-    Celery --> Redis
-    Celery --> PG
-    API --> Prom[Prometheus]
-    Prom --> Graf[Grafana]
-    API --> Safepay[Safepay]
-    API --> MLflow[MLflow]
-```
+> See [interactive architecture diagram](https://mycyber.pk/docs/architecture)
+
+**System Components:**
+- **Frontend**: React 18 + Tailwind CSS PWA
+- **Backend**: FastAPI + Python 3.11
+- **ML Engine**: HuggingFace BERT NER + Regex hybrid
+- **Database**: PostgreSQL 16 + Redis 7
+- **Task Queue**: Celery with Beat scheduler
+- **Monitoring**: Prometheus + Grafana + MLflow
+- **Auth**: JWT + bcrypt + MFA/TOTP
+- **Billing**: Safepay Pakistan integration
+
+**Data Flow:** User → React Frontend → FastAPI → NER/Regex Engine → PostgreSQL → Redis → Alerting
 
 ### Data Flow - Scan Processing
 
-```mermaid
-graph LR
-    User --> Frontend
-    Frontend --> API
-    API --> NER
-    NER --> DB
-    DB --> Response
-```
+> See [interactive data flow diagram](https://mycyber.pk/docs/dataflow)
+
+**Scan Processing Steps:**
+1. User submits text/file via React frontend
+2. FastAPI validates request and applies rate limiting
+3. Content sent to NER engine for entity detection
+4. Regex patterns applied for additional matches
+5. Risk score calculated based on entity severity
+6. Results saved to PostgreSQL
+7. Stats cached in Redis
+8. Critical/HIGH severity alerts sent via Telegram
+9. Response returned to frontend
 
 ### Scheduled Scan Architecture
 
-```mermaid
-graph TD
-    Beat[Beat] --> Queue[Queue]
-    Queue --> Worker[Worker]
-    Worker --> Scan[Scan]
-    Scan --> DB[DB]
-```
+> See [interactive Celery architecture diagram](https://mycyber.pk/docs/scheduled-scans)
+
+**How Scheduled Scans Work:**
+1. Celery Beat scheduler checks cron expressions every 60 seconds
+2. Due jobs queued in Redis
+3. Celery Worker pulls tasks from queue
+4. Scan executed asynchronously
+5. Results saved to PostgreSQL
+6. Alerts sent via Telegram for critical findings
 
 ## Quick start (Docker)
 
