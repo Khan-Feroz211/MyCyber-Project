@@ -183,6 +183,8 @@ make up
 # Open http://localhost
 ```
 
+> 📖 **For production deployment, see [DEPLOYMENT.md](DEPLOYMENT.md)** — Includes Railway, AWS, DigitalOcean, and Pakistan VPS options
+
 Default demo: http://localhost → Register → Run scan
 
 ## Tech stack
