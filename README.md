@@ -90,22 +90,8 @@ Payment via Safepay (JazzCash, Easypaisa, bank transfer)
 
 ```mermaid
 graph LR
-    subgraph Free
-        F1[100 scans]
-        F2[Text File]
-        F3[Email]
-    end
-    subgraph Pro
-        P1[10K scans]
-        P2[All Types]
-        P3[Telegram]
-    end
-    subgraph Enterprise
-        E1[Unlimited]
-        E2[Custom]
-        E3[SSO]
-    end
-    F1 --> P1 --> E1
+    Free[Free 100 scans] --> Pro[Pro 10K scans]
+    Pro --> Enterprise[Enterprise Unlimited]
 ```
 
 ## 📊 Performance & Test Coverage
@@ -114,10 +100,10 @@ graph LR
 
 ```mermaid
 graph LR
-    A[🔤 Text Scan 450ms] --> B[📄 File Scan 800ms]
-    B --> C[📦 Large File 1500ms]
-    C --> D[🔐 Login 120ms]
-    D --> E[📊 Dashboard 180ms]
+    A[Text 450ms] --> B[File 800ms]
+    B --> C[Large 1500ms]
+    C --> D[Login 120ms]
+    D --> E[Dash 180ms]
 ```
 
 | Operation | Avg | p95 | p99 |
@@ -131,13 +117,12 @@ graph LR
 ### 🧪 Test Coverage
 
 ```mermaid
-pie title Test Coverage by Module
-    "Auth Security 75%" : 75
-    "Scan Engine 60%" : 60
-    "Billing 45%" : 45
-    "Alerts 70%" : 70
-    "Scheduled 65%" : 65
-    "Reports 80%" : 80
+graph LR
+    A[Auth 75] --> B[Scan 60]
+    B --> C[Billing 45]
+    C --> D[Alerts 70]
+    D --> E[Scheduled 65]
+    E --> F[Reports 80]
 ```
 
 | Module | Tests | Coverage | Status |
@@ -161,37 +146,43 @@ pytest tests/ -v --cov=app --cov-report=html
 
 ```mermaid
 graph TB
-    U[User] --> FE[React Frontend]
-    FE --> API[FastAPI Backend]
-    API --> AUTH[JWT + MFA]
-    API --> SCAN[NER + Regex Engine]
-    API --> CELERY[Celery Workers]
-    API --> NOTIFY[Email + Telegram]
-    SCAN --> NER[HuggingFace BERT]
-    SCAN --> REX[Regex Patterns]
-    API --> REDIS[(Redis)]
-    API --> PG[(PostgreSQL)]
-    CELERY --> REDIS
-    CELERY --> PG
-    API --> PROM[Prometheus]
-    PROM --> GRAF[Grafana]
-    API --> SP[Safepay Pakistan]
-    API --> ML[MLflow]
+    User[User] --> Frontend[React]
+    Frontend --> API[FastAPI]
+    API --> Auth[JWT MFA]
+    API --> Scan[NER Regex]
+    API --> Celery[Celery]
+    API --> Email[Email Telegram]
+    Scan --> Hugging[HuggingFace]
+    Scan --> Regex[Regex]
+    API --> Redis[Redis]
+    API --> PG[PostgreSQL]
+    Celery --> Redis
+    Celery --> PG
+    API --> Prom[Prometheus]
+    Prom --> Graf[Grafana]
+    API --> Safepay[Safepay]
+    API --> MLflow[MLflow]
 ```
 
 ### Data Flow - Scan Processing
 
 ```mermaid
 graph LR
-    User --> Frontend --> API
-    API --> NER --> DB --> Response
+    User --> Frontend
+    Frontend --> API
+    API --> NER
+    NER --> DB
+    DB --> Response
 ```
 
 ### Scheduled Scan Architecture
 
 ```mermaid
 graph TD
-    Beat --> Queue --> Worker --> Scan --> Save
+    Beat[Beat] --> Queue[Queue]
+    Queue --> Worker[Worker]
+    Worker --> Scan[Scan]
+    Scan --> DB[DB]
 ```
 
 ## Quick start (Docker)
