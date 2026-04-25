@@ -7,6 +7,21 @@ version: "3.9"
 
 services:
 
+  # ── Redis (Celery broker & cache) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: mycyber_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── PostgreSQL 16 ─────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -40,6 +55,8 @@ services:
       - "8000:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       # Live-reload: mount source into container (dev only)
@@ -127,8 +144,55 @@ services:
     depends_on:
       - prometheus
 
+  # ── Celery Worker ─────────────────────────────────────────────────────────
+  celery_worker:
+    build:
+      context:    ./backend
+      dockerfile: Dockerfile
+    container_name: mycyber_celery_worker
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-mycyber_dlp}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "celery -A app.celery_app worker --loglevel=info --concurrency=2"
+
+  # ── Celery Beat (Scheduler) ──────────────────────────────────────────────
+  celery_beat:
+    build:
+      context:    ./backend
+      dockerfile: Dockerfile
+    container_name: mycyber_celery_beat
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-mycyber_dlp}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - celery_beat_data:/app/celerybeat
+    command: >
+      sh -c "celery -A app.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler"
+
 volumes:
   postgres_data:
+  redis_data:
   mlflow_data:
   prometheus_data:
   grafana_data:
+  celery_beat_data:
