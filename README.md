@@ -223,48 +223,41 @@ graph TB
 ### Data Flow - Scan Processing
 
 ```mermaid
-sequenceDiagram
-    participant U as User
-    participant FE as React Frontend
-    participant API as FastAPI Backend
-    participant NER as NER Engine
-    participant DB as PostgreSQL
-    participant RED as Redis
-    participant TEL as Telegram
-
-    U->>FE: Paste text / Upload file
-    FE->>API: POST /api/v1/scan/text
-    API->>API: Rate limit check
-    API->>NER: Analyze content
-    NER-->>API: Detected entities
-    API->>API: Calculate risk score
-    API->>DB: Save scan record
-    API->>RED: Update stats cache
+graph LR
+    U[👤 User] -->|1. Paste text| FE[⚛️ React Frontend]
+    FE -->|2. POST /scan| API[🚀 FastAPI]
+    API -->|3. Check limits| RATE[Rate Limiter]
+    API -->|4. Analyze| NER[🔍 NER Engine]
+    NER -->|5. Entities| API
+    API -->|6. Calc score| RISK[Risk Scorer]
+    API -->|7. Save| DB[(🐘 PostgreSQL)]
+    API -->|8. Cache| RED[(⚡ Redis)]
+    API -->|9. Alert if critical| TEL[📧 Telegram]
+    API -->|10. Response| FE
+    FE -->|11. Display| U
     
-    alt CRITICAL/HIGH severity
-        API->>TEL: Send Telegram alert
-    end
-    
-    API-->>FE: Scan result + entities
-    FE-->>U: Display risk score
+    style API fill:#009688,color:#fff
+    style NER fill:#FF6B35,color:#fff
+    style DB fill:#336791,color:#fff
 ```
 
 ### Scheduled Scan Architecture
 
 ```mermaid
-graph LR
-    BEAT[Celery Beat<br/>Scheduler] -->|Every 60s| CHECK{Check Cron<br/>Expressions}
-    CHECK -->|Match| QUEUE[Redis Queue]
-    CHECK -->|No Match| WAIT[Wait]
+graph TD
+    BEAT[⏰ Celery Beat Scheduler] -->|Every 60 seconds| CHECK{Check Cron Expressions}
+    CHECK -->|Match found| QUEUE[(⚡ Redis Queue)]
+    CHECK -->|No match| WAIT[⏳ Wait next minute]
     
-    WORKER[Celery Worker] -->|Pull Task| QUEUE
-    WORKER -->|Execute| SCAN[Run Scan]
-    SCAN -->|Save| DB[(PostgreSQL)]
-    SCAN -->|Alert| TEL[Telegram]
+    WORKER[🚀 Celery Worker] -->|Pull task| QUEUE
+    WORKER -->|Execute| SCAN[🔍 Run Scan]
+    SCAN -->|Save results| DB[(🐘 PostgreSQL)]
+    SCAN -->|If critical| TEL[📧 Telegram Alert]
     
     style BEAT fill:#FF9800,color:#000
     style WORKER fill:#4CAF50,color:#fff
     style QUEUE fill:#DC382D,color:#fff
+    style SCAN fill:#4DABF7,color:#fff
 ```
 
 ## Quick start (Docker)
