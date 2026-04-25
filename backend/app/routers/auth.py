@@ -11,25 +11,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import get_settings
 from ..db.database import get_db
 from ..db.models import User
-from ..dependencies import get_current_user
 from ..models.schemas import (
-    MFAVerifyRequest,
     MFASetupResponse,
-    MFAStatusResponse,
+    MFAVerifyRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     Token,
     UserCreate,
     UserOut,
 )
-from ..services import billing_service
 from ..services.auth import (
+    authenticate_user,
     create_access_token,
+    create_refresh_token,
     create_reset_token,
+    decode_refresh_token,
     decode_reset_token,
+    get_password_hash,
     hash_password,
     verify_password,
 )
-from ..services.mfa import build_otpauth_uri, generate_totp_secret, verify_totp_code
-from ..services.security_audit import log_security_event
+from ..services.billing_service import ensure_user_subscription
+from ..services.email_service import send_password_reset_email
+from ..services.security import log_security_event
 from ..models.schemas import PasswordResetRequest, PasswordResetConfirm
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -360,8 +364,8 @@ async def password_reset_request(
 ) -> dict:
     """Request a password reset. Always returns 202 to prevent email enumeration.
 
-    In production, this would send an email with a reset link.
-    For now, the reset token is returned directly (development only).
+    Sends email with reset link in production. In development without SMTP
+    configured, returns the token directly.
     """
     result = await db.execute(select(User).where(User.email == payload.email))
     user: User | None = result.scalars().first()
@@ -379,12 +383,17 @@ async def password_reset_request(
         user=user,
     )
 
-    # TODO: Send email with reset link containing the token
-    # For development, return the token directly
-    return {
-        "message": "If an account exists with this email, a reset link has been sent.",
-        "reset_token": reset_token,  # Remove this in production
-    }
+    # Send email in production; return token in development
+    email_sent = await send_password_reset_email(user.email, reset_token)
+
+    if email_sent:
+        return {"message": "If an account exists with this email, a reset link has been sent."}
+    else:
+        # Development fallback: return token directly
+        return {
+            "message": "If an account exists with this email, a reset link has been sent.",
+            "reset_token": reset_token,  # Only shown when email not configured
+        }
 
 
 @router.post("/password/reset/confirm", status_code=status.HTTP_200_OK)
