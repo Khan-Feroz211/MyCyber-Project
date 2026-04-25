@@ -90,40 +90,22 @@ Payment via Safepay (JazzCash, Easypaisa, bank transfer)
 
 ```mermaid
 graph LR
-    subgraph "Free Plan"
-        F1[100 scans/mo]
-        F2[Text + File]
-        F3[Email Alerts]
-        F4[7-day History]
+    subgraph Free
+        F1[100 scans]
+        F2[Text File]
+        F3[Email]
     end
-    
-    subgraph "Pro Plan"
-        P1[10K scans/mo]
-        P2[All Scan Types]
-        P3[Telegram Alerts]
-        P4[Scheduled Scans]
-        P5[API Access]
-        P6[90-day History]
+    subgraph Pro
+        P1[10K scans]
+        P2[All Types]
+        P3[Telegram]
     end
-    
-    subgraph "Enterprise"
+    subgraph Enterprise
         E1[Unlimited]
-        E2[Custom Rules]
-        E3[SSO/SAML]
-        E4[On-premise Option]
-        E5[SLA 99.9%]
+        E2[Custom]
+        E3[SSO]
     end
-    
-    F1 --> P1
-    F2 --> P2
-    F3 --> P3
-    P1 --> E1
-    P4 --> E2
-    P5 --> E4
-    
-    style Free fill:#e0e0e0,color:#000
-    style Pro fill:#4CAF50,color:#fff
-    style Enterprise fill:#FF9800,color:#000
+    F1 --> P1 --> E1
 ```
 
 ## 📊 Performance & Test Coverage
@@ -131,21 +113,11 @@ graph LR
 ### ⚡ Latency Benchmarks
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0891b2', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0891b2', 'lineColor': '#64748b', 'secondaryColor': '#e0e0e0', 'tertiaryColor': '#fff'}}}%%
 graph LR
-    subgraph "API Latency (p95)"
-        direction TB
-        A[🔤 Text Scan<br/>450ms] --> B[📄 File &lt;1MB<br/>800ms]
-        B --> C[📦 File &lt;10MB<br/>1500ms]
-        C --> D[🔐 Login<br/>120ms]
-        D --> E[📊 Dashboard<br/>180ms]
-    end
-    
-    style A fill:#FF6B6B,color:#fff
-    style B fill:#FFA94D,color:#000
-    style C fill:#FFD43B,color:#000
-    style D fill:#69DB7C,color:#000
-    style E fill:#4DABF7,color:#fff
+    A[🔤 Text Scan 450ms] --> B[📄 File Scan 800ms]
+    B --> C[📦 Large File 1500ms]
+    C --> D[🔐 Login 120ms]
+    D --> E[📊 Dashboard 180ms]
 ```
 
 | Operation | Avg | p95 | p99 |
@@ -159,15 +131,13 @@ graph LR
 ### 🧪 Test Coverage
 
 ```mermaid
-%%{init: {'theme': 'base'}}%%
-pie
-    title Test Coverage by Module
-    "✅ Auth & Security (75%)" : 75
-    "🟡 Scan Engine (60%)" : 60
-    "🔴 Billing (45%)" : 45
-    "✅ Alerts (70%)" : 70
-    "🟡 Scheduled (65%)" : 65
-    "✅ Reports (80%)" : 80
+pie title Test Coverage by Module
+    "Auth Security 75%" : 75
+    "Scan Engine 60%" : 60
+    "Billing 45%" : 45
+    "Alerts 70%" : 70
+    "Scheduled 65%" : 65
+    "Reports 80%" : 80
 ```
 
 | Module | Tests | Coverage | Status |
@@ -191,73 +161,52 @@ pytest tests/ -v --cov=app --cov-report=html
 
 ```mermaid
 graph TB
-    U[👤 User] -->|HTTPS| FE[⚛️ React PWA]
-    FE -->|REST API / WebSocket| API[🚀 FastAPI Backend]
-    
-    API -->|Auth| AUTH[🔐 JWT + MFA]
-    API -->|Scan| SCAN[🔍 NER + Regex Engine]
-    API -->|Tasks| CELERY[⏰ Celery Workers]
-    API -->|Alerts| NOTIFY[📧 Email + Telegram]
-    
-    SCAN -->|Model| NER[HuggingFace BERT]
-    SCAN -->|Rules| REX[Regex Patterns]
-    
-    API -->|Cache| REDIS[(⚡ Redis)]
-    API -->|Store| PG[(🐘 PostgreSQL)]
-    
+    U[User] --> FE[React Frontend]
+    FE --> API[FastAPI Backend]
+    API --> AUTH[JWT + MFA]
+    API --> SCAN[NER + Regex Engine]
+    API --> CELERY[Celery Workers]
+    API --> NOTIFY[Email + Telegram]
+    SCAN --> NER[HuggingFace BERT]
+    SCAN --> REX[Regex Patterns]
+    API --> REDIS[(Redis)]
+    API --> PG[(PostgreSQL)]
     CELERY --> REDIS
     CELERY --> PG
-    
-    API -->|Metrics| PROM[📈 Prometheus]
-    PROM --> GRAF[📊 Grafana]
-    
-    API -->|Billing| SP[💳 Safepay Pakistan]
-    API -->|Tracking| ML[🔬 MLflow]
-    
-    style API fill:#009688,color:#fff
-    style SCAN fill:#FF6B35,color:#fff
-    style PG fill:#336791,color:#fff
-    style REDIS fill:#DC382D,color:#fff
+    API --> PROM[Prometheus]
+    PROM --> GRAF[Grafana]
+    API --> SP[Safepay Pakistan]
+    API --> ML[MLflow]
 ```
 
 ### Data Flow - Scan Processing
 
 ```mermaid
 graph LR
-    U[👤 User] -->|1. Paste text| FE[⚛️ React Frontend]
-    FE -->|2. POST /scan| API[🚀 FastAPI]
-    API -->|3. Check limits| RATE[Rate Limiter]
-    API -->|4. Analyze| NER[🔍 NER Engine]
-    NER -->|5. Entities| API
-    API -->|6. Calc score| RISK[Risk Scorer]
-    API -->|7. Save| DB[(🐘 PostgreSQL)]
-    API -->|8. Cache| RED[(⚡ Redis)]
-    API -->|9. Alert if critical| TEL[📧 Telegram]
-    API -->|10. Response| FE
-    FE -->|11. Display| U
-    
-    style API fill:#009688,color:#fff
-    style NER fill:#FF6B35,color:#fff
-    style DB fill:#336791,color:#fff
+    U[User] --> FE[React Frontend]
+    FE --> API[FastAPI]
+    API --> RATE[Rate Limiter]
+    API --> NER[NER Engine]
+    NER --> API
+    API --> RISK[Risk Scorer]
+    API --> DB[(PostgreSQL)]
+    API --> RED[(Redis)]
+    API --> TEL[Telegram]
+    API --> FE
+    FE --> U
 ```
 
 ### Scheduled Scan Architecture
 
 ```mermaid
 graph TD
-    BEAT[⏰ Celery Beat Scheduler] -->|Every 60 seconds| CHECK{Check Cron Expressions}
-    CHECK -->|Match found| QUEUE[(⚡ Redis Queue)]
-    CHECK -->|No match| WAIT[⏳ Wait next minute]
-    
-    WORKER[🚀 Celery Worker] -->|Pull task| QUEUE
-    WORKER -->|Execute| SCAN[🔍 Run Scan]
-    SCAN -->|Save results| DB[(🐘 PostgreSQL)]
-    SCAN -->|If critical| TEL[📧 Telegram Alert]
-    
-    style BEAT fill:#FF9800,color:#000
-    style WORKER fill:#4CAF50,color:#fff
-    style QUEUE fill:#DC382D,color:#fff
-    style SCAN fill:#4DABF7,color:#fff
+    BEAT[Celery Beat] --> CHECK{Check Cron}
+    CHECK --> QUEUE[(Redis Queue)]
+    CHECK --> WAIT[Wait]
+    WORKER[Celery Worker] --> QUEUE
+    WORKER --> SCAN[Run Scan]
+    SCAN --> DB[(PostgreSQL)]
+    SCAN --> TEL[Telegram]
 ```
 
 ## Quick start (Docker)
@@ -428,4 +377,4 @@ Full API docs: https://api.mycyber.pk/docs
 Feroz Khan — AI Engineering student at NUTECH Islamabad
 GitHub: github.com/Khan-Feroz211
 LinkedIn: linkedin.com/in/feroz-khan
-Email: feroz@mycyber.pk
+Email: www.ferozkhan@outlook.com
