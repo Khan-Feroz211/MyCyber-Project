@@ -8,13 +8,21 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB)](https://react.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Made in Pakistan](https://img.shields.io/badge/Made%20in-Pakistan-%23006E4E)](https://mycyber.pk)
-[![Documentation](https://img.shields.io/badge/docs-interactive-blue)](https://mycyber.pk/docs)
 
-> � **Full interactive diagrams, architecture visuals, and performance charts are available at: [mycyber.pk/docs](https://mycyber.pk/docs)**
+## ✅ Completed Work
 
-*GitHub Markdown has rendering limitations for complex diagrams. For the best visual experience with interactive architecture diagrams and performance visualizations, please visit our documentation site above.*
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Email Password Reset** | ✅ Done | SMTP/SendGrid integration for production password reset emails |
+| **Celery Background Workers** | ✅ Done | Scheduled scan execution with Redis queue and Beat scheduler |
+| **Test Coverage** | ✅ Done | 62 tests covering auth, scans, billing, alerts, reports |
+| **Telegram Alerts** | ✅ Done | Real-time alerts for CRITICAL/HIGH severity findings |
+| **Report Export** | ✅ Done | CSV and HTML export with filters |
+| **Redis & Celery in Docker** | ✅ Done | Full Docker Compose setup with all services |
+| **Security Assessment** | ✅ Done | Comprehensive security audit (7.5/10 rating) |
+| **Contact Email Update** | ✅ Done | Updated to www.ferozkhan@outlook.com |
 
-> �🛡️ **Stop data leaks before they cost you.**
+> 🛡️ **Stop data leaks before they cost you.**
 > 
 > Detect **CNIC**, **IBAN**, **API keys**, and **8 more sensitive data types** across text, files, and network traffic in **under 1 second**.
 
@@ -130,8 +138,6 @@ pytest tests/ -v --cov=app --cov-report=html
 
 ### High-Level Architecture
 
-> See [interactive architecture diagram](https://mycyber.pk/docs/architecture)
-
 **System Components:**
 - **Frontend**: React 18 + Tailwind CSS PWA
 - **Backend**: FastAPI + Python 3.11
@@ -146,8 +152,6 @@ pytest tests/ -v --cov=app --cov-report=html
 
 ### Data Flow - Scan Processing
 
-> See [interactive data flow diagram](https://mycyber.pk/docs/dataflow)
-
 **Scan Processing Steps:**
 1. User submits text/file via React frontend
 2. FastAPI validates request and applies rate limiting
@@ -160,8 +164,6 @@ pytest tests/ -v --cov=app --cov-report=html
 9. Response returned to frontend
 
 ### Scheduled Scan Architecture
-
-> See [interactive Celery architecture diagram](https://mycyber.pk/docs/scheduled-scans)
 
 **How Scheduled Scans Work:**
 1. Celery Beat scheduler checks cron expressions every 60 seconds
