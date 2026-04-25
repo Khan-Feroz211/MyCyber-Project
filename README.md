@@ -183,30 +183,15 @@ graph TB
 
 ```mermaid
 graph LR
-    U[User] --> FE[React Frontend]
-    FE --> API[FastAPI]
-    API --> RATE[Rate Limiter]
-    API --> NER[NER Engine]
-    NER --> API
-    API --> RISK[Risk Scorer]
-    API --> DB[(PostgreSQL)]
-    API --> RED[(Redis)]
-    API --> TEL[Telegram]
-    API --> FE
-    FE --> U
+    User --> Frontend --> API
+    API --> NER --> DB --> Response
 ```
 
 ### Scheduled Scan Architecture
 
 ```mermaid
 graph TD
-    BEAT[Celery Beat] --> CHECK{Check Cron}
-    CHECK --> QUEUE[(Redis Queue)]
-    CHECK --> WAIT[Wait]
-    WORKER[Celery Worker] --> QUEUE
-    WORKER --> SCAN[Run Scan]
-    SCAN --> DB[(PostgreSQL)]
-    SCAN --> TEL[Telegram]
+    Beat --> Queue --> Worker --> Scan --> Save
 ```
 
 ## Quick start (Docker)
