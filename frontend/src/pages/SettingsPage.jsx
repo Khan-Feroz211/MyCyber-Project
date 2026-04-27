@@ -30,6 +30,7 @@ export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [usage, setUsage] = React.useState(null);
+  const [sessionInfo, setSessionInfo] = React.useState(null);
   const [mfaStatus, setMfaStatus] = React.useState({ enabled: false, rollout_mode: "off" });
   const [setupData, setSetupData] = React.useState(null);
   const [verifyCode, setVerifyCode] = React.useState("");
@@ -54,6 +55,13 @@ export default function SettingsPage() {
       .meFull()
       .then((res) => {
         setUsage(res.data?.usage || null);
+      })
+      .catch(() => {});
+
+    authApi
+      .getSession()
+      .then((res) => {
+        setSessionInfo(res.data);
       })
       .catch(() => {});
   }, []);
@@ -214,7 +222,9 @@ export default function SettingsPage() {
             <div className="border-t border-gray-800 pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm text-white font-medium">Active Sessions</p>
-                <p className="text-xs text-gray-500">You have 1 active session</p>
+                <p className="text-xs text-gray-500">
+                  {sessionInfo?.ip_address ? `IP: ${sessionInfo.ip_address}` : "Loading..."}
+                </p>
               </div>
               <span className="text-xs text-green-400 font-medium">Current device</span>
             </div>
@@ -222,9 +232,17 @@ export default function SettingsPage() {
             <div className="border-t border-gray-800 pt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm text-white font-medium">JWT Token Expiry</p>
-                <p className="text-xs text-gray-500">Tokens expire after 24 hours of inactivity</p>
+                <p className="text-xs text-gray-500">
+                  {sessionInfo?.token_expiry
+                    ? `Expires at ${new Date(sessionInfo.token_expiry).toLocaleString()}`
+                    : "Loading..."}
+                </p>
               </div>
-              <span className="text-xs text-gray-400">24h</span>
+              <span className="text-xs text-gray-400">
+                {sessionInfo?.token_expiry
+                  ? `${Math.max(0, Math.ceil((new Date(sessionInfo.token_expiry) - new Date()) / 3600000))}h remaining`
+                  : "Loading..."}
+              </span>
             </div>
 
             <div className="border-t border-gray-800 pt-4 space-y-4">

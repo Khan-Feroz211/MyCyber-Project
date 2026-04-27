@@ -243,6 +243,38 @@ async def me_full(
     }
 
 
+@router.get("/session")
+async def get_session_info(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Return current session information including IP, user agent, and JWT expiry."""
+    client_ip = _extract_client_ip(request)
+    user_agent = request.headers.get("user-agent", "Unknown")
+    
+    # Decode JWT to get expiry (if possible)
+    token_expiry = None
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        try:
+            from ..services.auth import decode_access_token
+            payload = decode_access_token(token)
+            if payload and "exp" in payload:
+                token_expiry = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+        except Exception:
+            pass
+    
+    return {
+        "ip_address": client_ip,
+        "user_agent": user_agent,
+        "login_time": current_user.last_login,
+        "last_login_ip": current_user.last_login_ip,
+        "token_expiry": token_expiry,
+        "is_current_session": True,
+    }
+
+
 @router.get("/mfa/status", response_model=MFAStatusResponse)
 async def mfa_status(current_user: User = Depends(get_current_user)) -> MFAStatusResponse:
     return MFAStatusResponse(

@@ -44,6 +44,10 @@ export const authApi = {
     return client.get("/api/v1/auth/me/full");
   },
 
+  getSession() {
+    return client.get("/api/v1/auth/session");
+  },
+
   getMfaStatus() {
     return client.get("/api/v1/auth/mfa/status");
   },

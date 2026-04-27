@@ -47,7 +47,7 @@ export default function AlertsPage() {
   const [query, setQuery] = useState("");
   const [ackingIds, setAckingIds] = useState(new Set());
   const [ackedIds, setAckedIds] = useState(new Set());
-  const [dismissedIds, setDismissedIds] = useState(new Set());
+  const [deletingIds, setDeletingIds] = useState(new Set());
   const [ackAllLoading, setAckAllLoading] = useState(false);
 
   const fetchAlerts = useCallback(async () => {
@@ -94,8 +94,20 @@ export default function AlertsPage() {
     }
   }
 
-  function handleDismiss(alertId) {
-    setDismissedIds((prev) => new Set(prev).add(alertId));
+  async function handleDelete(alertId) {
+    setDeletingIds((prev) => new Set(prev).add(alertId));
+    try {
+      await alertApi.deleteAlert(alertId);
+      setAllAlerts((prev) => prev.filter((a) => a.alert_id !== alertId));
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to delete alert.");
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(alertId);
+        return next;
+      });
+    }
   }
 
   const acknowledged = allAlerts.filter((a) => a.is_acknowledged || ackedIds.has(a.alert_id));
@@ -103,7 +115,6 @@ export default function AlertsPage() {
 
   const baseAlerts = showAcknowledged ? allAlerts : unacknowledged;
   const visibleAlerts = baseAlerts.filter((alert) => {
-    if (dismissedIds.has(alert.alert_id)) return false;
     if (severityFilter !== "ALL" && (alert.severity ?? "").toUpperCase() !== severityFilter) return false;
     const haystack = `${alert.title ?? ""} ${alert.description ?? ""}`.toLowerCase();
     if (query.trim() && !haystack.includes(query.trim().toLowerCase())) return false;
@@ -271,10 +282,11 @@ export default function AlertsPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDismiss(alertId)}
-                          className="rounded-xl border border-white/10 px-3 py-1.5 text-xs text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
+                          disabled={deletingIds.has(alertId)}
+                          onClick={() => handleDelete(alertId)}
+                          className="rounded-xl border border-red-700/50 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-600 hover:text-white disabled:cursor-wait disabled:opacity-60"
                         >
-                          Dismiss
+                          {deletingIds.has(alertId) ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     ) : (

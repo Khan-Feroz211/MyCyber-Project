@@ -140,3 +140,23 @@ async def acknowledge_all_alerts(db: AsyncSession, user: User) -> int:
 
     await db.flush()
     return len(alerts)
+
+
+async def delete_alert(db: AsyncSession, user: User, alert_id: str) -> None:
+    """Delete an alert by ID; raise 404 if not found or wrong tenant."""
+    result = await db.execute(
+        select(Alert).where(
+            Alert.alert_id == alert_id,
+            Alert.tenant_id == user.tenant_id,
+        )
+    )
+    alert: Alert | None = result.scalars().first()
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Alert '{alert_id}' not found",
+        )
+
+    await db.delete(alert)
+    await db.flush()

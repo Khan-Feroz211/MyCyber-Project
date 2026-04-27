@@ -10,6 +10,7 @@ from ..models.schemas import AcknowledgeRequest, AlertOut, AlertsResponse
 from ..services.alert_service import (
     acknowledge_alert,
     acknowledge_all_alerts,
+    delete_alert,
     get_alerts,
 )
 
@@ -69,3 +70,14 @@ async def acknowledge_all(
     """Acknowledge all unacknowledged alerts for the current tenant."""
     updated = await acknowledge_all_alerts(db=db, user=current_user)
     return {"updated": updated}
+
+
+@router.delete("/{alert_id}")
+async def delete_alert_endpoint(
+    alert_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Delete an alert by ID."""
+    await delete_alert(db=db, user=current_user, alert_id=alert_id)
+    return {"message": "Alert deleted"}

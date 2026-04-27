@@ -38,4 +38,12 @@ export const alertApi = {
   acknowledgeAll() {
     return client.post("/api/v1/alerts/acknowledge-all");
   },
+
+  /**
+   * Delete a specific alert.
+   * @param {string|number} alertId
+   */
+  deleteAlert(alertId) {
+    return client.delete(`/api/v1/alerts/${alertId}`);
+  },
 };
