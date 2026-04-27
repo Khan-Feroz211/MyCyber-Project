@@ -10,7 +10,7 @@ import {
   Shield,
   Sparkles,
 } from "lucide-react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAuth } from "../context/AuthContext";
 import { alertApi } from "../api/alerts";
 import { scanApi } from "../api/scans";
@@ -149,6 +149,25 @@ export default function DashboardPage() {
       ].filter((d) => d.value > 0)
     : [];
 
+  // Calculate trend data for last 7 days
+  const trendData = React.useMemo(() => {
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      days.push({
+        date: dateStr,
+        scans: history.filter((h) => {
+          const scanDate = new Date(h.created_at);
+          return scanDate.toDateString() === date.toDateString();
+        }).length,
+      });
+    }
+    return days;
+  }, [history]);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -216,6 +235,56 @@ export default function DashboardPage() {
               <StatCard title="Critical Threats" value={stats?.critical_scans ?? 0} icon={<AlertTriangle />} color="bg-red-700" />
               <StatCard title="Scans This Month" value={stats?.scans_this_month ?? 0} icon={<Activity />} color="bg-emerald-700" />
               <StatCard title="Plan" value={(user?.plan ?? "FREE").toUpperCase()} icon={<Shield />} color="bg-sky-700" />
+            </div>
+
+            <div className="surface-panel rounded-[28px] p-5">
+              <div className="mb-4">
+                <p className="font-mono-ui text-[11px] uppercase tracking-[0.24em] text-slate-500">Activity</p>
+                <h2 className="mt-1 text-sm font-semibold text-white">Scan activity (last 7 days)</h2>
+              </div>
+              {trendData.every((d) => d.scans === 0) ? (
+                <EmptyState
+                  icon={<Activity />}
+                  title="No recent activity"
+                  message="Scan activity will appear here once you start using the platform."
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={trendData}>
+                    <XAxis
+                      dataKey="date"
+                      stroke="#64748b"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#09131d",
+                        border: "1px solid rgba(120,145,168,0.18)",
+                        borderRadius: "16px",
+                        color: "#f8fafc",
+                        fontSize: "12px",
+                      }}
+                      itemStyle={{ color: "#dbe7f3" }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="scans"
+                      stroke="#22d3ee"
+                      strokeWidth={2}
+                      dot={{ fill: "#22d3ee", r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
