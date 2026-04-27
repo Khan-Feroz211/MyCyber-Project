@@ -12,6 +12,7 @@ from ..services.alert_service import (
     acknowledge_all_alerts,
     delete_alert,
     get_alerts,
+    update_review_status,
 )
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
@@ -81,3 +82,15 @@ async def delete_alert_endpoint(
     """Delete an alert by ID."""
     await delete_alert(db=db, user=current_user, alert_id=alert_id)
     return {"message": "Alert deleted"}
+
+
+@router.patch("/{alert_id}/review-status")
+async def update_review_status_endpoint(
+    alert_id: str,
+    status: str = Query(..., description="Review status: pending, reviewed, dismissed, resolved"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AlertOut:
+    """Update the review status of an alert."""
+    alert = await update_review_status(db=db, user=current_user, alert_id=alert_id, status=status)
+    return AlertOut.model_validate(alert)

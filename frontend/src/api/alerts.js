@@ -46,4 +46,15 @@ export const alertApi = {
   deleteAlert(alertId) {
     return client.delete(`/api/v1/alerts/${alertId}`);
   },
+
+  /**
+   * Update the review status of an alert.
+   * @param {string|number} alertId
+   * @param {string} status - 'pending', 'reviewed', 'dismissed', 'resolved'
+   */
+  updateReviewStatus(alertId, status) {
+    return client.patch(`/api/v1/alerts/${alertId}/review-status`, null, {
+      params: { status },
+    });
+  },
 };

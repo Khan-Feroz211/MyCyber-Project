@@ -48,6 +48,7 @@ export default function AlertsPage() {
   const [ackingIds, setAckingIds] = useState(new Set());
   const [ackedIds, setAckedIds] = useState(new Set());
   const [deletingIds, setDeletingIds] = useState(new Set());
+  const [updatingReviewIds, setUpdatingReviewIds] = useState(new Set());
   const [ackAllLoading, setAckAllLoading] = useState(false);
 
   const fetchAlerts = useCallback(async () => {
@@ -103,6 +104,24 @@ export default function AlertsPage() {
       setError(err?.response?.data?.detail || "Failed to delete alert.");
     } finally {
       setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(alertId);
+        return next;
+      });
+    }
+  }
+
+  async function handleUpdateReviewStatus(alertId, newStatus) {
+    setUpdatingReviewIds((prev) => new Set(prev).add(alertId));
+    try {
+      await alertApi.updateReviewStatus(alertId, newStatus);
+      setAllAlerts((prev) =>
+        prev.map((a) => (a.alert_id === alertId ? { ...a, review_status: newStatus } : a))
+      );
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to update review status.");
+    } finally {
+      setUpdatingReviewIds((prev) => {
         const next = new Set(prev);
         next.delete(alertId);
         return next;
@@ -270,28 +289,50 @@ export default function AlertsPage() {
                       </div>
                     </div>
 
-                    {!isAcked ? (
-                      <div className="flex shrink-0 items-center gap-2">
-                        <button
-                          type="button"
-                          disabled={isAcking}
-                          onClick={() => handleAcknowledge(alertId)}
-                          className="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] disabled:cursor-wait disabled:opacity-60"
-                        >
-                          {isAcking ? "Acknowledging..." : "Acknowledge"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={deletingIds.has(alertId)}
-                          onClick={() => handleDelete(alertId)}
-                          className="rounded-xl border border-red-700/50 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-600 hover:text-white disabled:cursor-wait disabled:opacity-60"
-                        >
-                          {deletingIds.has(alertId) ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="shrink-0 text-xs font-medium text-emerald-300">Acknowledged</span>
-                    )}
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <select
+                        value={alert.review_status ?? "pending"}
+                        onChange={(e) => handleUpdateReviewStatus(alertId, e.target.value)}
+                        disabled={updatingReviewIds.has(alertId)}
+                        className={`rounded-lg border px-2 py-1 text-xs font-medium outline-none transition ${
+                          (alert.review_status ?? "pending") === "pending"
+                            ? "border-slate-600 bg-slate-800 text-slate-300"
+                            : (alert.review_status ?? "pending") === "reviewed"
+                            ? "border-cyan-600/50 bg-cyan-900/20 text-cyan-300"
+                            : (alert.review_status ?? "pending") === "dismissed"
+                            ? "border-amber-600/50 bg-amber-900/20 text-amber-300"
+                            : "border-emerald-600/50 bg-emerald-900/20 text-emerald-300"
+                        } disabled:opacity-50`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="dismissed">Dismissed</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+
+                      {!isAcked ? (
+                        <div className="flex shrink-0 items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={isAcking}
+                            onClick={() => handleAcknowledge(alertId)}
+                            className="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] disabled:cursor-wait disabled:opacity-60"
+                          >
+                            {isAcking ? "Acknowledging..." : "Acknowledge"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingIds.has(alertId)}
+                            onClick={() => handleDelete(alertId)}
+                            className="rounded-xl border border-red-700/50 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-600 hover:text-white disabled:cursor-wait disabled:opacity-60"
+                          >
+                            {deletingIds.has(alertId) ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="shrink-0 text-xs font-medium text-emerald-300">Acknowledged</span>
+                      )}
+                    </div>
                   </div>
                 </li>
               );

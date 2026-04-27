@@ -193,12 +193,17 @@ class AlertOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     alert_id: str
+    user_id: int
+    tenant_id: str
+    scan_id: str
     severity: str
     title: str
     description: str
-    is_acknowledged: bool
+    is_acknowledged: bool | None = None
+    acknowledged_at: datetime | None = None
+    review_status: str = "pending"
+    reviewed_at: datetime | None = None
     created_at: datetime
-    scan_id: str
 
 
 class AlertsResponse(BaseModel):

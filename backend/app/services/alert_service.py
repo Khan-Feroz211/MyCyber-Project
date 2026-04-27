@@ -160,3 +160,36 @@ async def delete_alert(db: AsyncSession, user: User, alert_id: str) -> None:
 
     await db.delete(alert)
     await db.flush()
+
+
+async def update_review_status(db: AsyncSession, user: User, alert_id: str, status: str) -> Alert:
+    """Update the review status of an alert; raise 404 if not found or wrong tenant."""
+    valid_statuses = {"pending", "reviewed", "dismissed", "resolved"}
+    if status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid review status. Must be one of: {', '.join(valid_statuses)}",
+        )
+
+    result = await db.execute(
+        select(Alert).where(
+            Alert.alert_id == alert_id,
+            Alert.tenant_id == user.tenant_id,
+        )
+    )
+    alert: Alert | None = result.scalars().first()
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Alert '{alert_id}' not found",
+        )
+
+    alert.review_status = status
+    if status != "pending":
+        alert.reviewed_at = datetime.now(tz=timezone.utc)
+    else:
+        alert.reviewed_at = None
+
+    await db.flush()
+    return alert
