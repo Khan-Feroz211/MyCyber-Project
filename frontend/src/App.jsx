@@ -22,6 +22,7 @@ import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
 import BillingPage from "./pages/BillingPage";
 import AdminIncidentsPage from "./pages/AdminIncidentsPage";
+import ScheduledScansPage from "./pages/ScheduledScansPage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import TermsOfService from "./pages/legal/TermsOfService";
@@ -206,6 +207,14 @@ function AppRoutes() {
         element={
           <ProtectedAppRoute>
             <AlertsPage />
+          </ProtectedAppRoute>
+        }
+      />
+      <Route
+        path="/scheduled"
+        element={
+          <ProtectedAppRoute>
+            <ScheduledScansPage />
           </ProtectedAppRoute>
         }
       />
