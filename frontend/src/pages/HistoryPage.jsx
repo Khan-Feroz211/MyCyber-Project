@@ -251,6 +251,30 @@ export default function HistoryPage() {
               </button>
               <button
                 type="button"
+                onClick={async () => {
+                  try {
+                    const res = await reportsApi.exportJson({
+                      severity: severityFilter !== "ALL" ? severityFilter : undefined,
+                      scan_type: typeFilter !== "ALL" ? typeFilter.toLowerCase() : undefined,
+                    });
+                    const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `mycyber-history-${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (err) {
+                    setError("Export failed. Please try again.");
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
+              >
+                <FileText className="h-4 w-4" />
+                Export JSON
+              </button>
+              <button
+                type="button"
                 onClick={fetchScans}
                 className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
               >

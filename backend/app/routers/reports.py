@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -156,4 +157,54 @@ async def export_html(
     return PlainTextResponse(
         content=html,
         media_type="text/html; charset=utf-8",
+    )
+
+
+@router.get("/export/json")
+async def export_json(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    severity: str | None = Query(default=None),
+    scan_type: str | None = Query(default=None),
+    limit: int = Query(default=500, ge=1, le=5000),
+) -> StreamingResponse:
+    """Export scan history as a JSON file."""
+    history = await get_scan_history(
+        db=db,
+        user=current_user,
+        page=1,
+        page_size=limit,
+        severity=severity,
+        scan_type=scan_type,
+    )
+
+    data = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "user_email": current_user.email,
+        "total_records": len(history.items),
+        "scans": [
+            {
+                "scan_id": row.scan_id,
+                "scan_type": row.scan_type,
+                "severity": row.severity,
+                "risk_score": row.risk_score,
+                "total_entities": row.total_entities,
+                "recommended_action": row.recommended_action,
+                "summary": row.summary,
+                "filename": row.filename,
+                "source_ip": row.source_ip,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "entities": row.entities if hasattr(row, "entities") else [],
+            }
+            for row in history.items
+        ],
+    }
+
+    json_str = json.dumps(data, indent=2, default=str)
+    filename = f"mycyber_scans_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+
+    return StreamingResponse(
+        io.BytesIO(json_str.encode("utf-8")),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
