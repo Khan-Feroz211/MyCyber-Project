@@ -77,6 +77,22 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         EntityType.API_KEY,
         40,
     ),
+    # LLM provider API keys — commonly leaked by developers
+    # Covers: OpenAI (classic + project + service-account),
+    #         Anthropic, HuggingFace, Google AI/Gemini
+    (
+        re.compile(
+            r"(?:"
+            r"sk-(?:proj|svcacct)-[A-Za-z0-9_-]{20,}"  # OpenAI project / svcacct
+            r"|sk-ant-[A-Za-z0-9_-]{20,}"               # Anthropic
+            r"|sk-[A-Za-z0-9]{40,}"                     # OpenAI classic (sk- + 40+ alnum)
+            r"|hf_[A-Za-z0-9]{20,}"                     # HuggingFace token
+            r"|AIza[0-9A-Za-z_-]{35}"                   # Google AI / Gemini
+            r")"
+        ),
+        EntityType.LLM_API_KEY,
+        50,
+    ),
     (
         re.compile(
             r"(?:password|passwd|pwd)\s*[:=]\s*['\"][^'\"]{4,}['\"]",
@@ -122,7 +138,7 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
 ]
 
 # Entities that immediately push severity to CRITICAL
-_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD, EntityType.CNIC}
+_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD, EntityType.CNIC, EntityType.LLM_API_KEY}
 
 # Entities that push severity to at least HIGH
 _HIGH_TYPES = {

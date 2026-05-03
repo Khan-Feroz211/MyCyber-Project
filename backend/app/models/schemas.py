@@ -33,6 +33,7 @@ class EntityType(str, Enum):
     DRIVERS_LICENSE = "DRIVERS_LICENSE"
     BANK_ACCOUNT = "BANK_ACCOUNT"
     CNIC = "CNIC"
+    LLM_API_KEY = "LLM_API_KEY"
     CUSTOM = "CUSTOM"
 
 

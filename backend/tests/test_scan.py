@@ -93,6 +93,96 @@ async def test_scan_text_api_key(client: AsyncClient, auth_headers: dict) -> Non
     assert "API_KEY" in entity_types
 
 
+# ---------------------------------------------------------------------------
+# LLM API key detection — post-LLM scenario
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_scan_openai_classic_key(client: AsyncClient, auth_headers: dict) -> None:
+    """An OpenAI classic key (sk- + 48 alphanumeric chars) is detected as LLM_API_KEY."""
+    openai_key = "sk-" + "A" * 48
+    with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
+        response = await client.post(
+            "/api/v1/scan/text",
+            json={"text": f"OPENAI_API_KEY={openai_key}"},
+            headers=auth_headers,
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["severity"] == "CRITICAL"
+    assert data["recommended_action"] == "BLOCK"
+    entity_types = [e["entity_type"] for e in data["entities"]]
+    assert "LLM_API_KEY" in entity_types
+
+
+@pytest.mark.asyncio
+async def test_scan_openai_project_key(client: AsyncClient, auth_headers: dict) -> None:
+    """An OpenAI project key (sk-proj-…) is detected as LLM_API_KEY."""
+    openai_proj_key = "sk-proj-" + "B" * 50
+    with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
+        response = await client.post(
+            "/api/v1/scan/text",
+            json={"text": f"export OPENAI_KEY={openai_proj_key}"},
+            headers=auth_headers,
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["severity"] == "CRITICAL"
+    entity_types = [e["entity_type"] for e in data["entities"]]
+    assert "LLM_API_KEY" in entity_types
+
+
+@pytest.mark.asyncio
+async def test_scan_anthropic_key(client: AsyncClient, auth_headers: dict) -> None:
+    """An Anthropic API key (sk-ant-…) is detected as LLM_API_KEY."""
+    anthropic_key = "sk-ant-api03-" + "C" * 90
+    with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
+        response = await client.post(
+            "/api/v1/scan/text",
+            json={"text": f"client = anthropic.Anthropic(api_key='{anthropic_key}')"},
+            headers=auth_headers,
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["severity"] == "CRITICAL"
+    entity_types = [e["entity_type"] for e in data["entities"]]
+    assert "LLM_API_KEY" in entity_types
+
+
+@pytest.mark.asyncio
+async def test_scan_huggingface_token(client: AsyncClient, auth_headers: dict) -> None:
+    """A HuggingFace token (hf_…) is detected as LLM_API_KEY."""
+    hf_token = "hf_" + "D" * 34
+    with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
+        response = await client.post(
+            "/api/v1/scan/text",
+            json={"text": f"HF_TOKEN={hf_token}"},
+            headers=auth_headers,
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["severity"] == "CRITICAL"
+    entity_types = [e["entity_type"] for e in data["entities"]]
+    assert "LLM_API_KEY" in entity_types
+
+
+@pytest.mark.asyncio
+async def test_scan_google_ai_key(client: AsyncClient, auth_headers: dict) -> None:
+    """A Google AI / Gemini key (AIza…) is detected as LLM_API_KEY."""
+    google_key = "AIza" + "E" * 35
+    with patch("app.services.ner_model.run_ner", side_effect=_mock_run_ner):
+        response = await client.post(
+            "/api/v1/scan/text",
+            json={"text": f"genai.configure(api_key='{google_key}')"},
+            headers=auth_headers,
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["severity"] == "CRITICAL"
+    entity_types = [e["entity_type"] for e in data["entities"]]
+    assert "LLM_API_KEY" in entity_types
+
 @pytest.mark.asyncio
 async def test_scan_text_multiple_entities(
     client: AsyncClient, auth_headers: dict
