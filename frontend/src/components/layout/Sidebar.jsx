@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   Bell,
+  Brain,
   CalendarRepeat,
   Clock,
   CreditCard,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { to: "/history", icon: Clock, label: "Scan History" },
   { to: "/alerts", icon: Bell, label: "Alerts", badge: true },
   { to: "/scheduled", icon: CalendarRepeat, label: "Scheduled Scans" },
+  { to: "/llm-dlp", icon: Brain, label: "LLM DLP" },
   { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];

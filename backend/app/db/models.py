@@ -61,6 +61,9 @@ class User(Base):
     security_events: Mapped[list["SecurityAuditEvent"]] = relationship(
         "SecurityAuditEvent", back_populates="user", cascade="all, delete-orphan"
     )
+    llm_interactions: Mapped[list["LLMInteraction"]] = relationship(
+        "LLMInteraction", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class ScanRecord(Base):
@@ -257,3 +260,38 @@ class ScheduledScan(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class LLMInteraction(Base):
+    __tablename__ = "llm_interactions"
+
+    __table_args__ = (
+        Index("ix_llm_interactions_tenant_id", "tenant_id"),
+        Index("ix_llm_interactions_status", "status"),
+        Index("ix_llm_interactions_created_at", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    interaction_id: Mapped[str] = mapped_column(
+        String(36), unique=True, default=lambda: str(uuid.uuid4()), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    original_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    redacted_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    llm_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    post_scan_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pre_entities_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    post_entities_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    exposed_keys_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    auto_deactivated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="allowed", nullable=False)
+    llm_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    model_used: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="llm_interactions")

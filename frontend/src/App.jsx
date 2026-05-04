@@ -23,6 +23,7 @@ import SettingsPage from "./pages/SettingsPage";
 import BillingPage from "./pages/BillingPage";
 import AdminIncidentsPage from "./pages/AdminIncidentsPage";
 import ScheduledScansPage from "./pages/ScheduledScansPage";
+import LLMDLPPage from "./pages/LLMDLPPage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import TermsOfService from "./pages/legal/TermsOfService";
@@ -215,6 +216,14 @@ function AppRoutes() {
         element={
           <ProtectedAppRoute>
             <ScheduledScansPage />
+          </ProtectedAppRoute>
+        }
+      />
+      <Route
+        path="/llm-dlp"
+        element={
+          <ProtectedAppRoute>
+            <LLMDLPPage />
           </ProtectedAppRoute>
         }
       />
