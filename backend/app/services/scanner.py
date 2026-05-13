@@ -119,10 +119,58 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         EntityType.DATE_OF_BIRTH,
         25,
     ),
+    # ── SQL injection patterns ──────────────────────────────────────────────
+    (
+        re.compile(
+            r"(?:"
+            r"(?:--|#|/\*).*$"                          # comment sequences
+            r"|'\s*(?:OR|AND)\s*'?\d"                   # ' OR '1
+            r"|\bUNION\b.*\bSELECT\b"                  # UNION SELECT
+            r"|\bDROP\s+TABLE\b"                        # DROP TABLE
+            r"|\bINSERT\s+INTO\b"                       # INSERT INTO
+            r"|\bDELETE\s+FROM\b"                       # DELETE FROM
+            r"|\bEXEC(?:UTE)?\s*\("                     # EXEC(
+            r"|'\s*;\s*(?:DROP|DELETE|UPDATE|INSERT)"   # '; DROP
+            r"|\bSLEEP\s*\(\d+\)"                       # SLEEP(5)
+            r"|\bBENCHMARK\s*\("                        # BENCHMARK(
+            r"|\bWAITFOR\s+DELAY\b"                     # WAITFOR DELAY
+            r"|\bxp_cmdshell\b"                         # xp_cmdshell
+            r"|\bINFORMATION_SCHEMA\b"                  # INFORMATION_SCHEMA
+            r")",
+            re.IGNORECASE | re.MULTILINE,
+        ),
+        EntityType.SQL_INJECTION,
+        60,
+    ),
+    # ── Prompt injection patterns ───────────────────────────────────────────
+    (
+        re.compile(
+            r"(?:"
+            r"ignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions?"
+            r"|disregard\s+(?:all\s+)?(?:previous|prior|system)\s+(?:prompt|instructions?)"
+            r"|you\s+are\s+now\s+(?:a\s+)?(?:DAN|jailbreak|evil|uncensored)"
+            r"|act\s+as\s+(?:if\s+)?(?:you\s+(?:have\s+)?no\s+restrictions?|an?\s+unrestricted)"
+            r"|(?:forget|override)\s+(?:your\s+)?(?:previous\s+)?instructions?"
+            r"|reveal\s+(?:your\s+)?system\s+prompt"
+            r"|do\s+anything\s+now"
+            r"|jailbreak"
+            r"|prompt\s+injection"
+            r")",
+            re.IGNORECASE,
+        ),
+        EntityType.PROMPT_INJECTION,
+        70,
+    ),
 ]
 
 # Entities that immediately push severity to CRITICAL
-_CRITICAL_TYPES = {EntityType.API_KEY, EntityType.PASSWORD, EntityType.CNIC}
+_CRITICAL_TYPES = {
+    EntityType.API_KEY,
+    EntityType.PASSWORD,
+    EntityType.CNIC,
+    EntityType.SQL_INJECTION,
+    EntityType.PROMPT_INJECTION,
+}
 
 # Entities that push severity to at least HIGH
 _HIGH_TYPES = {

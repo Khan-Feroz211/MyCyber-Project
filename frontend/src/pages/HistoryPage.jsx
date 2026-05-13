@@ -213,12 +213,14 @@ export default function HistoryPage() {
                       severity: severityFilter !== "ALL" ? severityFilter : undefined,
                       scan_type: typeFilter !== "ALL" ? typeFilter.toLowerCase() : undefined,
                     });
-                    const blob = new Blob([res.data], { type: "text/csv" });
-                    const url = URL.createObjectURL(blob);
+                    // res.data is already a Blob (responseType: "blob") — don't double-wrap
+                    const url = URL.createObjectURL(res.data);
                     const a = document.createElement("a");
                     a.href = url;
                     a.download = `mycyber-history-${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                   } catch (err) {
                     setError("Export failed. Please try again.");
@@ -237,9 +239,16 @@ export default function HistoryPage() {
                       severity: severityFilter !== "ALL" ? severityFilter : undefined,
                       scan_type: typeFilter !== "ALL" ? typeFilter.toLowerCase() : undefined,
                     });
-                    const win = window.open("", "_blank");
-                    win.document.write(res.data);
-                    win.document.close();
+                    // Download as .html file — user can open and print-to-PDF
+                    const blob = new Blob([res.data], { type: "text/html; charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `mycyber-report-${new Date().toISOString().slice(0,10)}.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                   } catch (err) {
                     setError("Export failed. Please try again.");
                   }
@@ -262,7 +271,9 @@ export default function HistoryPage() {
                     const a = document.createElement("a");
                     a.href = url;
                     a.download = `mycyber-history-${new Date().toISOString().slice(0,10)}.json`;
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                   } catch (err) {
                     setError("Export failed. Please try again.");

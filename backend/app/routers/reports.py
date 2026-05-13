@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import html as html_lib
 import io
 import json
 from datetime import datetime, timezone
@@ -34,8 +35,8 @@ async def export_csv(
         user=current_user,
         page=1,
         page_size=limit,
-        severity=severity,
-        scan_type=scan_type,
+        severity_filter=severity,
+        scan_type_filter=scan_type,
     )
 
     output = io.StringIO()
@@ -84,9 +85,11 @@ async def export_html(
         user=current_user,
         page=1,
         page_size=limit,
-        severity=severity,
-        scan_type=scan_type,
+        severity_filter=severity,
+        scan_type_filter=scan_type,
     )
+
+    e = html_lib.escape  # shorthand — escapes <, >, &, ", ' to prevent XSS in the report
 
     rows_html = ""
     for row in history.items:
@@ -100,14 +103,14 @@ async def export_html(
 
         rows_html += (
             f"<tr>"
-            f"<td>{row.scan_id}</td>"
-            f"<td>{row.scan_type}</td>"
-            f'<td style="color:{color};font-weight:bold">{row.severity}</td>'
-            f"<td>{row.risk_score}</td>"
-            f"<td>{row.total_entities}</td>"
-            f"<td>{row.recommended_action}</td>"
-            f"<td>{row.summary[:120]}</td>"
-            f"<td>{row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '-'}</td>"
+            f"<td>{e(row.scan_id)}</td>"
+            f"<td>{e(row.scan_type)}</td>"
+            f'<td style="color:{color};font-weight:bold">{e(row.severity)}</td>'
+            f"<td>{e(str(row.risk_score))}</td>"
+            f"<td>{e(str(row.total_entities))}</td>"
+            f"<td>{e(row.recommended_action or '')}</td>"
+            f"<td>{e((row.summary or '')[:120])}</td>"
+            f"<td>{e(row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '-')}</td>"
             f"</tr>"
         )
 
@@ -115,7 +118,7 @@ async def export_html(
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MyCyber DLP Report — {current_user.email}</title>
+<title>MyCyber DLP Report — {e(current_user.email)}</title>
 <style>
   body {{ font-family: Arial, sans-serif; margin: 40px; color: #1e293b; }}
   h1 {{ font-size: 24px; margin-bottom: 8px; }}
@@ -134,7 +137,7 @@ async def export_html(
   <h1>MyCyber DLP — Scan Report</h1>
   <div class="meta">
     Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}<br>
-    User: {current_user.email}<br>
+    User: {e(current_user.email)}<br>
     Records: {len(history.items)}
   </div>
   <div class="no-print" style="margin-bottom:16px">
@@ -174,8 +177,8 @@ async def export_json(
         user=current_user,
         page=1,
         page_size=limit,
-        severity=severity,
-        scan_type=scan_type,
+        severity_filter=severity,
+        scan_type_filter=scan_type,
     )
 
     data = {
