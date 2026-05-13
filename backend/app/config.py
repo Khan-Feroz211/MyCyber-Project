@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     # Limits
-    max_file_size_mb: float = 10.0
+    max_file_size_mb: float = 25.0
     max_text_length: int = 50_000
     rate_limit_per_min: int = 60
 
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
     )
 
     # Auth / JWT
-    jwt_secret: str = "change-this-in-production"
+    jwt_secret: str = ""
     jwt_expire_hours: int = 24
     mfa_rollout_mode: str = "opt_in"  # off | opt_in | enforced
     login_max_failures: int = 5
@@ -54,6 +55,16 @@ class Settings(BaseSettings):
     smtp_username: str = ""
     smtp_password: str = ""
     sendgrid_api_key: str = ""
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        if not v or len(v) < 32:
+            raise ValueError(
+                "JWT_SECRET_KEY environment variable must be set to a string "
+                "with at least 32 characters for production security."
+            )
+        return v
 
     class Config:
         env_file = ".env"

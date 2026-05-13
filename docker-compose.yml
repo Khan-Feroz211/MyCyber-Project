@@ -58,11 +58,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      # Live-reload: mount source into container (dev only)
-      - ./backend:/app
     command: >
-      sh -c "alembic upgrade head &&
+      sh -c "alembic -c /app/alembic.ini upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     healthcheck:
       test:         ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -86,25 +83,29 @@ services:
 
   # ── MLflow Tracking Server ────────────────────────────────────────────────
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v3.11.1
+    image: python:3.11-slim
     container_name: mycyber_mlflow
     restart: unless-stopped
     ports:
       - "5001:5001"
     volumes:
       - mlflow_data:/mlflow
+    environment:
+      MLFLOW_BACKEND_STORE_URI: sqlite:////mlflow/mlflow.db
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
     command: >
-      mlflow server
-      --host 0.0.0.0
-      --port 5001
-      --backend-store-uri sqlite:///mlflow/mlflow.db
-      --default-artifact-root /mlflow/artifacts
+      sh -c "pip install --quiet mlflow &&
+             mlflow server
+             --host 0.0.0.0
+             --port 5001
+             --backend-store-uri sqlite:////mlflow/mlflow.db
+             --default-artifact-root /mlflow/artifacts"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 60s
 
   # ── Prometheus ────────────────────────────────────────────────────────────
   prometheus:
@@ -159,12 +160,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      backend:
-        condition: service_healthy
     volumes:
       - ./backend:/app
     command: >
       sh -c "celery -A app.celery_app worker --loglevel=info --concurrency=2"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # ── Celery Beat (Scheduler) ──────────────────────────────────────────────
   celery_beat:
@@ -180,8 +185,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      backend:
         condition: service_healthy
     volumes:
       - ./backend:/app

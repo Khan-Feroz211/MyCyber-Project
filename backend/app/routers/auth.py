@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import get_settings
 from ..db.database import get_db
 from ..db.models import User
+from ..dependencies import get_current_user
 from ..models.schemas import (
     MFASetupResponse,
     MFAVerifyRequest,
@@ -25,6 +26,7 @@ from ..services.auth import (
     create_access_token,
     create_refresh_token,
     create_reset_token,
+    decode_access_token,
     decode_refresh_token,
     decode_reset_token,
     get_password_hash,
@@ -33,8 +35,18 @@ from ..services.auth import (
 )
 from ..services.billing_service import ensure_user_subscription
 from ..services.email_service import send_password_reset_email
-from ..services.security import log_security_event
-from ..models.schemas import PasswordResetRequest, PasswordResetConfirm
+from ..services.mfa import (
+    build_otpauth_uri,
+    generate_totp_secret,
+    verify_totp_code,
+)
+from ..services.security_audit import log_security_event
+from ..services import billing_service
+from ..models.schemas import (
+    MFAStatusResponse,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
@@ -248,30 +260,16 @@ async def get_session_info(
     request: Request,
     current_user: User = Depends(get_current_user),
 ) -> dict:
-    """Return current session information including IP, user agent, and JWT expiry."""
+    """Return current session information including IP and user agent."""
     client_ip = _extract_client_ip(request)
     user_agent = request.headers.get("user-agent", "Unknown")
-    
-    # Decode JWT to get expiry (if possible)
-    token_expiry = None
-    auth_header = request.headers.get("authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-        try:
-            from ..services.auth import decode_access_token
-            payload = decode_access_token(token)
-            if payload and "exp" in payload:
-                token_expiry = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
-        except Exception:
-            pass
-    
+
     return {
         "ip_address": client_ip,
         "user_agent": user_agent,
         "login_time": current_user.last_login,
         "last_login_ip": current_user.last_login_ip,
-        "token_expiry": token_expiry,
-        "is_current_session": True,
+        "is_active": current_user.is_active,
     }
 
 
@@ -436,8 +434,8 @@ async def password_reset_confirm(
     """Reset password with a valid reset token."""
     try:
         token_data = decode_reset_token(payload.token)
-    except HTTPException as e:
-        return {"message": "Invalid or expired reset token."}
+    except HTTPException:
+        raise
 
     result = await db.execute(select(User).where(User.id == token_data.user_id))
     user: User | None = result.scalars().first()

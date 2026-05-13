@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, CreditCard, Key, ShieldCheck } from "lucide-react";
+import { Copy, CreditCard, Key, ShieldCheck, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { authApi } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/layout/DashboardLayout";
@@ -275,42 +276,74 @@ export default function SettingsPage() {
 
               {!mfaStatus.enabled && setupData && (
                 <div className="rounded-lg border border-cyan-900 bg-cyan-950/20 p-4 space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-white">Step 1: Add this account to your authenticator app</p>
-                    <div className="rounded-lg bg-gray-950 border border-gray-800 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-xs text-gray-500">Secret</p>
-                          <p className="font-mono text-xs text-gray-200 break-all">{setupData.secret}</p>
-                        </div>
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-white">Step 1: Scan the QR code with your authenticator app</p>
+                    <p className="text-xs text-gray-400">
+                      Use <span className="text-white font-medium">Google Authenticator</span>,{" "}
+                      <span className="text-white font-medium">Authy</span>, or any TOTP-compatible app.
+                    </p>
+
+                    {/* QR Code */}
+                    <div className="flex flex-col items-center gap-3 py-3">
+                      <div className="rounded-xl bg-white p-4 shadow-lg">
+                        <QRCodeSVG
+                          value={setupData.provisioning_uri}
+                          size={180}
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Can't scan?{" "}
                         <button
                           type="button"
                           onClick={() => copyText(setupData.secret)}
-                          className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:text-white"
+                          className="text-cyan-400 hover:text-cyan-300 underline"
                         >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                          Copy the secret key
+                        </button>{" "}
+                        and enter it manually.
+                      </p>
                     </div>
-                    <div className="rounded-lg bg-gray-950 border border-gray-800 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-xs text-gray-500">Provisioning URI</p>
-                          <p className="font-mono text-xs text-gray-200 break-all">{setupData.provisioning_uri}</p>
+
+                    {/* Manual entry fallback (collapsed by default) */}
+                    <details className="rounded-lg bg-gray-950 border border-gray-800">
+                      <summary className="cursor-pointer px-3 py-2 text-xs text-gray-400 hover:text-gray-200 select-none">
+                        Manual setup (secret key &amp; URI)
+                      </summary>
+                      <div className="p-3 space-y-2 border-t border-gray-800">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-500">Secret key</p>
+                            <p className="font-mono text-xs text-gray-200 break-all">{setupData.secret}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyText(setupData.secret)}
+                            className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:text-white shrink-0"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => copyText(setupData.provisioning_uri)}
-                          className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:text-white"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-500">Provisioning URI</p>
+                            <p className="font-mono text-xs text-gray-200 break-all">{setupData.provisioning_uri}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyText(setupData.provisioning_uri)}
+                            className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:text-white shrink-0"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </details>
                   </div>
 
                   <form onSubmit={handleVerifyMfa} className="space-y-3">
-                    <p className="text-sm font-medium text-white">Step 2: Verify the current 6-digit code</p>
+                    <p className="text-sm font-medium text-white">Step 2: Enter the 6-digit code from your app to confirm</p>
                     <div className="flex gap-3">
                       <input
                         type="text"

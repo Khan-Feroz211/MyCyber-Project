@@ -59,3 +59,6 @@ diagnostic_report.txt
 
 # ── Docker overrides (local only) ────────────────────────────────────────────
 docker-compose.override.yml
+
+# Added by ggshield
+.cache_ggshield

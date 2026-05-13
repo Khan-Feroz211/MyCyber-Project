@@ -7,6 +7,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import HTTPException, status
@@ -26,6 +27,23 @@ LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_DLP_ENABLED = os.getenv("LLM_DLP_ENABLED", "true").lower() == "true"
 LLM_AUTO_DEACTIVATE = os.getenv("LLM_AUTO_DEACTIVATE", "true").lower() == "true"
+
+
+def _validate_llm_url(url: str) -> None:
+    """Validate that LLM_BASE_URL is HTTPS and has a valid host."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise ValueError(
+            f"LLM_BASE_URL must use HTTPS, got: {parsed.scheme}. "
+            "Set LLM_BASE_URL to a secure endpoint."
+        )
+    if not parsed.netloc:
+        raise ValueError(
+            f"LLM_BASE_URL must have a valid host, got: {url}"
+        )
+
+
+_validate_llm_url(LLM_BASE_URL)
 
 # ── Pre-scan / redaction ───────────────────────────────────────────────────
 
