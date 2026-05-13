@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import logging
-import os
-import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
+from ..config import get_settings
 from ..models.schemas import TokenData
 
 ALGORITHM = "HS256"
@@ -17,14 +16,12 @@ RESET_TOKEN_EXPIRE_HOURS = 1
 
 _logger = logging.getLogger(__name__)
 
-_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
-if not _SECRET_KEY:
-    raise RuntimeError(
-        "JWT_SECRET_KEY environment variable is not set. "
-        "Set it to a long random secret before starting the application."
-    )
-
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+
+
+def _get_secret_key() -> str:
+    """Get JWT secret key from settings (validates on first call)."""
+    return get_settings().jwt_secret
 
 
 def hash_password(password: str) -> str:
@@ -47,7 +44,7 @@ def create_access_token(user_id: int, email: str, tenant_id: str) -> str:
         "iat": now,
         "exp": now + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     }
-    return jwt.encode(payload, _SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, _get_secret_key(), algorithm=ALGORITHM)
 
 
 def decode_access_token(token: str) -> TokenData:
@@ -58,7 +55,7 @@ def decode_access_token(token: str) -> TokenData:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, _SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, _get_secret_key(), algorithms=[ALGORITHM])
         user_id_raw: str | None = payload.get("sub")
         email: str | None = payload.get("email")
         tenant_id: str | None = payload.get("tenant_id")
@@ -85,7 +82,7 @@ def create_reset_token(user_id: int, email: str) -> str:
         "iat": now,
         "exp": now + timedelta(hours=RESET_TOKEN_EXPIRE_HOURS),
     }
-    return jwt.encode(payload, _SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, _get_secret_key(), algorithm=ALGORITHM)
 
 
 def decode_reset_token(token: str) -> TokenData:
@@ -96,7 +93,7 @@ def decode_reset_token(token: str) -> TokenData:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, _SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, _get_secret_key(), algorithms=[ALGORITHM])
         if payload.get("type") != "password_reset":
             raise credentials_exception
         user_id_raw: str | None = payload.get("sub")

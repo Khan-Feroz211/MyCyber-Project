@@ -102,6 +102,9 @@ async def scan_text(
         raise
 
 
+ALLOWED_FILE_EXTENSIONS = {".txt", ".pdf", ".docx", ".csv", ".json", ".xml", ".eml"}
+
+
 @router.post("/file", response_model=ScanResponse, status_code=status.HTTP_200_OK)
 async def scan_file(
     req: ScanFileRequest,
@@ -111,6 +114,13 @@ async def scan_file(
     """Decode a base64-encoded file and scan its contents for sensitive data."""
     start = time.perf_counter()
     try:
+        filename_lower = req.filename.lower()
+        if not any(filename_lower.endswith(ext) for ext in ALLOWED_FILE_EXTENSIONS):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File type not supported. Allowed types: {', '.join(ALLOWED_FILE_EXTENSIONS)}",
+            )
+
         try:
             result = _scanner.scan_file(req)
         except ValueError as exc:
