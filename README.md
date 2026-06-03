@@ -1,346 +1,151 @@
-# 🔒 MyCyber DLP
-## AI-powered Data Leakage Prevention for Pakistan
+# MyCyber — Open-Source DLP Platform
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Khan-Feroz211/MyCyber-Project/actions)
-[![Test Coverage](https://img.shields.io/badge/coverage-70%25-yellowgreen)](https://github.com/Khan-Feroz211/MyCyber-Project)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18-61DAFB)](https://react.dev/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Made in Pakistan](https://img.shields.io/badge/Made%20in-Pakistan-%23006E4E)](https://mycyber.pk)
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-8b5cf6?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/python-3.11-a78bfa?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/React-18-7c3aed?style=for-the-badge&logo=react&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115-6d28d9?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Docker-ready-8b5cf6?style=for-the-badge&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Made%20in-Pakistan-005534?style=for-the-badge" />
+</p>
 
-## ✅ Completed Work
+<p align="center">
+  <strong>Enterprise-grade Data Loss Prevention with real-time threat scanning, LLM-aware content filtering, and zero-trust access control.</strong>
+</p>
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| **Email Password Reset** | ✅ Done | SMTP/SendGrid integration for production password reset emails |
-| **Celery Background Workers** | ✅ Done | Scheduled scan execution with Redis queue and Beat scheduler |
-| **Test Coverage** | ✅ Done | 62 tests covering auth, scans, billing, alerts, reports |
-| **Telegram Alerts** | ✅ Done | Real-time alerts for CRITICAL/HIGH severity findings |
-| **Report Export** | ✅ Done | CSV and HTML export with filters |
-| **Redis & Celery in Docker** | ✅ Done | Full Docker Compose setup with all services |
-| **Security Assessment** | ✅ Done | Comprehensive security audit (7.5/10 rating) |
-| **Contact Email Update** | ✅ Done | Updated to www.ferozkhan@outlook.com |
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> ·
+  <a href="#-features">Features</a> ·
+  <a href="#-architecture">Architecture</a> ·
+  <a href="#-contributing">Contributing</a> ·
+  <a href="#-license">License</a>
+</p>
 
-> 🛡️ **Stop data leaks before they cost you.**
-> 
-> Detect **CNIC**, **IBAN**, **API keys**, and **8 more sensitive data types** across text, files, and network traffic in **under 1 second**.
+---
+
+## What is MyCyber?
+
+MyCyber is a self-hostable, open-source Data Loss Prevention platform built for organisations that cannot afford to lose sensitive data. It scans files, text, API calls, and LLM prompts in real time — detecting PII, credentials, financial data, and prompt injection attempts before they leave your perimeter.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  INPUT: "My CNIC is 42101-1234567-1 and email user@test.com"  │
-│                      ↓                                        │
-│  ⚡ AI NER + Regex Engine                                    │
-│                      ↓                                        │
-│  OUTPUT: 🔴 CRITICAL - 2 entities found in 0.8s             │
-│          • CNIC (42101-1234567-1) - CRITICAL                │
-│          • EMAIL (user@test.com) - HIGH                     │
-└─────────────────────────────────────────────────────────────┘
+User uploads file / sends LLM prompt
+         ↓
+  Pre-scan (prompt injection check)
+         ↓
+  40+ DLP rule engine (regex + ML)
+         ↓
+  PII · Credentials · Financial · Malware
+         ↓
+  Score → Alert → Notify Admin
+         ↓
+  Post-scan LLM response check
 ```
 
-## 🔴 Live Demo
+## ✨ Features
 
-🌐 **https://mycyber.pk** — Try the free plan, no credit card required.
+| Category | Capability |
+|---|---|
+| **Scanning** | 40+ DLP rule categories — CNIC, IBAN, API keys, passwords, PII |
+| **LLM DLP** | Pre/post-scan pipeline with auto-redaction and auto-deactivation |
+| **Auth** | JWT + refresh tokens, TOTP MFA, RBAC (user / admin) |
+| **Alerts** | Real-time WebSocket push + email notifications |
+| **Scheduling** | Cron-based scheduled scans with management UI |
+| **Admin** | Incident panel with CSV / HTML / JSON export |
+| **Monitoring** | Prometheus metrics + Grafana dashboards |
+| **Deployment** | Docker Compose — up in under 10 minutes |
 
-| Plan | Price | Best For |
-|------|-------|----------|
-| 🆓 **Free** | PKR 0 | Freelancers, testing |
-| 💼 **Pro** | PKR 4,500/mo | Small firms, clinics, law offices |
-| 🏢 **Enterprise** | PKR 15,000/mo | Fintech, SaaS, e-commerce |
+## 🚀 Quick Start
 
-## Launch Readiness Update (Apr 2026)
+### Prerequisites
+- Docker & Docker Compose
+- Node.js 20+ (for local frontend dev)
+- Python 3.11+ (for local backend dev)
 
-- Marketing landing page added at / with pricing, FAQ, and trust sections.
-- Legal pages live at /privacy and /terms.
-- First-run onboarding flow added for new users after registration.
-- Human-readable API error responses implemented for common failures.
-- Production security headers and root health redirect are enabled.
-- Phased MFA backend flow added (`off`, `opt_in`, `enforced`) with TOTP endpoints.
-- Login lockout and suspicious-login audit events are now recorded.
-- Admin incident APIs and dashboard route added for response actions.
-
-## Why MyCyber?
-
-Pakistani businesses face unique data privacy risks:
-CNIC numbers, Easypaisa/JazzCash credentials,
-and HBL/UBL IBANs are routinely leaked in emails,
-spreadsheets, and API responses. Existing DLP tools
-cost $50,000+/year and are built for US/EU markets.
-
-MyCyber detects Pakistan-specific PII starting at
-PKR 4,500/month.
-
-## What we detect
-
-| Entity Type | Example | Severity |
-|------------|---------|----------|
-| CNIC | 42101-1234567-1 | CRITICAL |
-| Credit Card | 4111-1111-1111-1111 | CRITICAL |
-| API Key | sk-proj-abc123... | CRITICAL |
-| Password | password=secret123 | CRITICAL |
-| IBAN | PK36SCBL0000001123456702 | HIGH |
-| Email | user@company.com | HIGH |
-| Phone | +923001234567 | MEDIUM |
-| IP Address | 192.168.1.100 | LOW |
-| URL Token | ...?token=abc123 | HIGH |
-
-## Plans & Pricing
-
-| | Free | Pro | Enterprise |
-|--|------|-----|-----------|
-| Scans/month | 100 | 10,000 | Unlimited |
-| File scanning | ✅ | ✅ | ✅ |
-| Network scanning | ❌ | ✅ | ✅ |
-| API access | ❌ | ✅ | ✅ |
-| Email alerts | ✅ | ✅ | ✅ |
-| Telegram alerts | ❌ | ✅ | ✅ |
-| SLA | ❌ | 99% | 99.9% |
-| Price | PKR 0 | PKR 4,500/mo | PKR 15,000/mo |
-
-Payment via Safepay (JazzCash, Easypaisa, bank transfer)
-
-### Feature Comparison
-
-- **Free**: 100 scans/mo, Text + File scanning, Email alerts
-- **Pro**: 10K scans/mo, All scan types, Telegram alerts, Scheduled scans, API access
-- **Enterprise**: Unlimited scans, Custom rules, SSO/SAML, On-premise option, 99.9% SLA
-
-## 📊 Performance & Test Coverage
-
-### ⚡ Latency Benchmarks
-
-| Operation | Avg | p95 | p99 |
-|-----------|-----|-----|-----|
-| 🔤 Text Scan (1KB) | 250ms | 450ms | 800ms |
-| 📄 File Scan (<1MB) | 500ms | 800ms | 1200ms |
-| 📦 File Scan (<10MB) | 900ms | 1500ms | 2500ms |
-| 🔐 Login + JWT | 80ms | 120ms | 200ms |
-| 📊 Dashboard Load | 150ms | 180ms | 300ms |
-
-### 🧪 Test Coverage
-
-| Module | Tests | Coverage | Status |
-|--------|-------|----------|--------|
-| 🔐 Authentication | 15 | 75% | 🟢 Good |
-| 🔍 DLP Scan Engine | 12 | 60% | 🟡 Medium |
-| 💳 Billing & Safepay | 8 | 45% | 🔴 Needs Work |
-| 🚨 Alerts (Email, Telegram) | 10 | 70% | 🟢 Good |
-| ⏰ Scheduled Scans | 9 | 65% | 🟡 Medium |
-| 📊 Reports (CSV/HTML) | 8 | 80% | 🟢 Good |
-
-**Run Tests:**
+### 1. Clone
 ```bash
-cd backend
-pytest tests/ -v --cov=app --cov-report=html
+git clone https://github.com/Khan-Feroz211/MyCyber-Project.git
+cd MyCyber-Project
 ```
 
-## 🏗️ System Architecture
-
-### High-Level Architecture
-
-**System Components:**
-- **Frontend**: React 18 + Tailwind CSS PWA
-- **Backend**: FastAPI + Python 3.11
-- **ML Engine**: HuggingFace BERT NER + Regex hybrid
-- **Database**: PostgreSQL 16 + Redis 7
-- **Task Queue**: Celery with Beat scheduler
-- **Monitoring**: Prometheus + Grafana + MLflow
-- **Auth**: JWT + bcrypt + MFA/TOTP
-- **Billing**: Safepay Pakistan integration
-
-**Data Flow:** User → React Frontend → FastAPI → NER/Regex Engine → PostgreSQL → Redis → Alerting
-
-### Data Flow - Scan Processing
-
-**Scan Processing Steps:**
-1. User submits text/file via React frontend
-2. FastAPI validates request and applies rate limiting
-3. Content sent to NER engine for entity detection
-4. Regex patterns applied for additional matches
-5. Risk score calculated based on entity severity
-6. Results saved to PostgreSQL
-7. Stats cached in Redis
-8. Critical/HIGH severity alerts sent via Telegram
-9. Response returned to frontend
-
-### Scheduled Scan Architecture
-
-**How Scheduled Scans Work:**
-1. Celery Beat scheduler checks cron expressions every 60 seconds
-2. Due jobs queued in Redis
-3. Celery Worker pulls tasks from queue
-4. Scan executed asynchronously
-5. Results saved to PostgreSQL
-6. Alerts sent via Telegram for critical findings
-
-## Quick start (Docker)
-
+### 2. Configure environment
 ```bash
-git clone https://github.com/Khan-Feroz211/MyCyber-Project
-cp .env.docker.example .env.docker
-# Edit .env.docker with your credentials
-make up
-# Open http://localhost
+cp .env.example .env.docker
+# Edit .env.docker — set ANTHROPIC_API_KEY, JWT_SECRET_KEY, SMTP config
 ```
 
-> 📖 **For production deployment, see [DEPLOYMENT.md](DEPLOYMENT.md)** — Includes Railway, AWS, DigitalOcean, and Pakistan VPS options
-
-Default demo: http://localhost → Register → Run scan
-
-## Tech stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | FastAPI + Python 3.11 |
-| ML | HuggingFace BERT NER + regex hybrid |
-| Database | PostgreSQL 16 + Redis 7 |
-| Auth | JWT + bcrypt |
-| MLOps | MLflow + Prometheus + Grafana |
-| Frontend | React 18 + Tailwind CSS |
-| Billing | Safepay Pakistan |
-| Infra | Docker + Kubernetes + GitHub Actions |
-
-## 🚀 Usage Examples
-
-### 1️⃣ Quick Text Scan (Web UI)
-
-```
-1. Login at https://mycyber.pk
-2. Go to "Scan" → "Text" tab
-3. Paste: "Contact: 42101-1234567-1, Email: user@example.com"
-4. Click "Scan Text"
-5. View results: 🔴 CRITICAL (2 entities found)
-```
-
-### 2️⃣ File Upload
-
-```
-Supported formats: .txt, .pdf, .docx, .csv, .json, .xml, .eml
-Max size: 10 MB
-
-1. Drag & drop file to "File" tab
-2. Automatic scan on upload
-3. Download CSV report from History page
-```
-
-### 3️⃣ Scheduled Scans (Pro/Enterprise)
-
+### 3. Start
 ```bash
-# Create daily scan job
-curl -X POST https://api.mycyber.pk/api/v1/scheduled/jobs \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Daily API Key Check",
-    "scan_type": "text",
-    "target": "your daily content here",
-    "schedule_cron": "0 9 * * *"
-  }'
+docker-compose up -d
 ```
 
-### 4️⃣ API Integration (Pro/Enterprise)
+### 4. Open
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:80 |
+| Backend API | http://localhost:8000 |
+| API Docs | http://localhost:8000/docs |
+| Grafana | http://localhost:3001 |
+| MLflow | http://localhost:5001 |
 
-```python
-import requests
+> Default admin credentials are set via `FIRST_ADMIN_EMAIL` / `FIRST_ADMIN_PASSWORD` in your `.env.docker`.
 
-API_URL = "https://api.mycyber.pk/api/v1"
-TOKEN = "your-jwt-token"
+## 🏗 Architecture
 
-# Scan text
-def scan_text(content):
-    response = requests.post(
-        f"{API_URL}/scan/text",
-        headers={"Authorization": f"Bearer {TOKEN}"},
-        json={"text": content, "context": "general"}
-    )
-    return response.json()
-
-# Check usage
-def check_usage():
-    response = requests.get(
-        f"{API_URL}/billing/usage",
-        headers={"Authorization": f"Bearer {TOKEN}"}
-    )
-    return response.json()
-
-# Example
-result = scan_text("My CNIC is 42101-1234567-1")
-print(f"Risk Score: {result['risk_score']}")
-print(f"Severity: {result['severity']}")
-print(f"Entities: {result['total_entities']}")
+```
+┌─────────────────────────────────────────────────────┐
+│                   React SPA (Vite)                   │
+│          Tailwind · framer-motion · Recharts         │
+└─────────────────┬───────────────────────────────────┘
+                  │ HTTPS / WebSocket
+┌─────────────────▼───────────────────────────────────┐
+│              FastAPI (Python 3.11)                   │
+│   JWT Auth · RBAC · Rate limiting · Audit log        │
+├──────────────┬──────────────┬────────────────────────┤
+│  DLP Engine  │  LLM Pipeline│  Celery Workers        │
+│  40+ rules   │  Claude API  │  Scheduled scans       │
+└──────┬───────┴──────────────┴────────┬───────────────┘
+       │                               │
+┌──────▼───────┐              ┌────────▼───────────────┐
+│  PostgreSQL  │              │   Redis (broker/cache) │
+└──────────────┘              └────────────────────────┘
 ```
 
-### 5️⃣ Export Reports
+## 🔑 API Keys Needed
 
-```bash
-# Export CSV
-curl -X GET "https://api.mycyber.pk/api/v1/reports/export/csv?severity=CRITICAL" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -o security_report.csv
+| API | Free Tier | Purpose |
+|---|---|---|
+| Anthropic Claude | None (usage-based) | LLM DLP pipeline |
+| VirusTotal | 500 req/day | Malware scanning |
+| HIBP | Free | Password breach check |
+| SMTP | Free (Gmail/SG) | Alert emails |
 
-# Export HTML (print to PDF)
-curl -X GET "https://api.mycyber.pk/api/v1/reports/export/html" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -o report.html
-```
+## 🤝 Contributing
 
-### 📊 Sample API Response
+We welcome contributions of all kinds — bug fixes, new DLP rules, UI improvements, docs, or translations.
 
-```json
-{
-  "scan_id": "scan_abc123",
-  "severity": "CRITICAL",
-  "risk_score": 85.5,
-  "total_entities": 2,
-  "entities": [
-    {
-      "entity_type": "CNIC",
-      "value": "42101-1234567-1",
-      "confidence": 0.98,
-      "severity": "CRITICAL"
-    },
-    {
-      "entity_type": "EMAIL",
-      "value": "user@example.com",
-      "confidence": 0.95,
-      "severity": "HIGH"
-    }
-  ],
-  "recommended_action": "REVIEW",
-  "summary": "Detected CNIC and email address",
-  "scan_duration_ms": 450
-}
-```
+1. Fork the repo
+2. Create a branch: `git checkout -b feat/your-feature`
+3. Make your changes and add tests
+4. Run checks: `pytest` and `npm run build`
+5. Open a pull request using the [PR template](.github/pull_request_template.md)
 
-Full API docs: https://api.mycyber.pk/docs
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
 
-## Make commands
+### Good first issues
+Look for issues tagged [`good first issue`](https://github.com/Khan-Feroz211/MyCyber-Project/issues?q=label%3A%22good+first+issue%22) — these are scoped and beginner-friendly.
 
-| Command | Description |
-|---------|-------------|
-| make up | Start all services |
-| make down | Stop all services |
-| make logs | Follow all logs |
-| make migrate | Run DB migrations |
-| make test | Run all tests |
+## 🛡 Security
 
-## Security
+Found a vulnerability? **Please do not open a public issue.** Email **f24605023@nutech.edu.pk** directly. We aim to respond within 48 hours.
 
-- All data encrypted in transit (TLS)
-- Scan content processed in memory (not stored)
-- JWT auth with bcrypt password hashing
-- Phased MFA + account lockout controls
-- Security audit event pipeline for login and admin actions
-- Admin incident response endpoints for lock/unlock/deactivate/reactivate
-- Kubernetes NetworkPolicy (zero-trust)
-- GitHub Actions security scanning (Bandit + Trivy)
-- See [security page](https://mycyber.pk/security)
-- Ops checklist: `docs/SECURITY_BACKUP_RESTORE_CHECKLIST.md`
-- Hardening helper script: `scripts/security-hardening-checklist.sh`
+See [SECURITY.md](SECURITY.md) for our full disclosure policy.
 
-## Built by
+## 📄 License
 
-Feroz Khan — AI Engineering student at NUTECH Islamabad
-GitHub: github.com/Khan-Feroz211
-LinkedIn: linkedin.com/in/feroz-khan
-Email: www.ferozkhan@outlook.com
+MIT — see [LICENSE](LICENSE) for details.
+
+Copyright © 2026 Feroz U Din — MyCyber Project Contributors.
+
+---
+
+<p align="center">Built with ❤️ at NUTECH, Pakistan</p>
