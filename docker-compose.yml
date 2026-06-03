@@ -13,7 +13,7 @@ services:
     container_name: mycyber_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
@@ -160,8 +160,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
     command: >
       sh -c "celery -A app.celery_app worker --loglevel=info --concurrency=2"
     healthcheck:
@@ -187,7 +185,6 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app
       - celery_beat_data:/app/celerybeat
     command: >
       sh -c "celery -A app.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler"

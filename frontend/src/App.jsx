@@ -176,6 +176,7 @@ function AppRoutes() {
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/security" element={<SecurityPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/landing" element={<LandingPage />} />
       <Route path="/onboarding" element={<OnboardingRoute />} />
 
       {/* ── Protected routes ── */}
