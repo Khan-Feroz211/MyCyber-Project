@@ -159,6 +159,7 @@ export default function AlertsPage() {
   });
 
   return (
+    <>
     <DashboardLayout>
       <div className="space-y-6">
         <section className="surface-panel-strong rounded-[30px] p-6 sm:p-8">
@@ -412,5 +413,6 @@ export default function AlertsPage() {
         </div>
       </div>
     )}
+    </>
   );
 }
