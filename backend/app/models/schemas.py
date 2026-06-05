@@ -214,6 +214,16 @@ class AlertsResponse(BaseModel):
     unacknowledged: int
 
 
+class FileDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    scan_id: str
+    filename: Optional[str]
+    input_preview: Optional[str]
+    entities: list[DetectedEntity] = Field(default_factory=list)
+    created_at: datetime
+
+
 class AcknowledgeRequest(BaseModel):
     alert_id: str
 

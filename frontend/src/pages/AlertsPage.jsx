@@ -50,6 +50,9 @@ export default function AlertsPage() {
   const [deletingIds, setDeletingIds] = useState(new Set());
   const [updatingReviewIds, setUpdatingReviewIds] = useState(new Set());
   const [ackAllLoading, setAckAllLoading] = useState(false);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileModalOpen, setFileModalOpen] = useState(false);
 
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
@@ -108,6 +111,21 @@ export default function AlertsPage() {
         next.delete(alertId);
         return next;
       });
+    }
+  }
+
+  async function openAlertFile(alertId) {
+    setFileLoading(true);
+    setFileModalOpen(true);
+    setSelectedFile(null);
+    try {
+      const res = await alertApi.getAlertFile(alertId);
+      setSelectedFile(res.data);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to load file details.");
+      setFileModalOpen(false);
+    } finally {
+      setFileLoading(false);
     }
   }
 
@@ -328,6 +346,13 @@ export default function AlertsPage() {
                           >
                             {deletingIds.has(alertId) ? "Deleting..." : "Delete"}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => openAlertFile(alertId)}
+                            className="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05]"
+                          >
+                            Details
+                          </button>
                         </div>
                       ) : (
                         <span className="shrink-0 text-xs font-medium text-emerald-300">Acknowledged</span>
@@ -341,5 +366,51 @@ export default function AlertsPage() {
         )}
       </div>
     </DashboardLayout>
+    {fileModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60" onClick={() => setFileModalOpen(false)} />
+        <div className="relative z-10 w-[90%] max-w-3xl rounded-2xl bg-slate-900 p-6">
+          <div className="flex items-start justify-between">
+            <h3 className="text-lg font-semibold text-white">File details</h3>
+            <button className="text-slate-400" onClick={() => setFileModalOpen(false)}>Close</button>
+          </div>
+          <div className="mt-4 max-h-[60vh] overflow-auto text-sm text-slate-300">
+            {fileLoading ? (
+              <p>Loading...</p>
+            ) : selectedFile ? (
+              <div className="space-y-3">
+                <p className="font-mono-ui text-xs text-slate-400">scan:{selectedFile.scan_id}</p>
+                <p className="text-sm font-semibold text-white">{selectedFile.filename ?? "(no filename)"}</p>
+                <p className="text-xs text-slate-500">{new Date(selectedFile.created_at).toLocaleString()}</p>
+                <div className="mt-2 rounded-md border border-white/5 bg-slate-800 p-3">
+                  <div className="text-xs text-slate-400">Preview</div>
+                  <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap text-xs">{selectedFile.input_preview ?? "(no preview stored)"}</pre>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400">Detected entities</div>
+                  {selectedFile.entities && selectedFile.entities.length > 0 ? (
+                    <ul className="mt-2 space-y-2">
+                      {selectedFile.entities.map((e, idx) => (
+                        <li key={idx} className="rounded-md border border-white/5 bg-slate-800 p-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-slate-300">{e.entity_type}</div>
+                            <div className="text-xs text-slate-400">{Math.round((e.confidence || 0) * 100)}%</div>
+                          </div>
+                          <div className="mt-1 font-mono-ui text-xs text-slate-200">{e.value}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-500">No detected entities stored for this scan.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-rose-400">File details not available.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
   );
 }

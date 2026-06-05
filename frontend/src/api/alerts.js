@@ -57,4 +57,12 @@ export const alertApi = {
       params: { status },
     });
   },
+
+  /**
+   * Fetch file/scan details for an alert.
+   * @param {string} alertId
+   */
+  getAlertFile(alertId) {
+    return client.get(`/api/v1/alerts/${alertId}/file`);
+  },
 };

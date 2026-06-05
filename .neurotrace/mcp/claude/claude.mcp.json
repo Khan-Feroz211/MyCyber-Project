@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "neurotrace": {
+      "command": "C:\\Users\\Feroz Khan\\AppData\\Local\\Programs\\NeuroTrace\\neurotrace.exe",
+      "args": [
+        "--mcp",
+        "--workspace",
+        "${CLAUDE_PROJECT_DIR:-.}"
+      ]
+    }
+  }
+}

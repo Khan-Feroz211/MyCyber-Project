@@ -7,6 +7,7 @@ from ..db.database import get_db
 from ..db.models import User
 from ..dependencies import get_current_user
 from ..models.schemas import AcknowledgeRequest, AlertOut, AlertsResponse
+from ..models.schemas import FileDetail
 from ..services.alert_service import (
     acknowledge_alert,
     acknowledge_all_alerts,
@@ -14,6 +15,9 @@ from ..services.alert_service import (
     get_alerts,
     update_review_status,
 )
+from ..services.scan_store import get_scan_by_id
+from sqlalchemy.exc import NoResultFound
+import json
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -94,3 +98,50 @@ async def update_review_status_endpoint(
     """Update the review status of an alert."""
     alert = await update_review_status(db=db, user=current_user, alert_id=alert_id, status=status)
     return AlertOut.model_validate(alert)
+
+
+
+@router.get("/{alert_id}/file", response_model=FileDetail)
+async def alert_file_details(
+    alert_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> FileDetail:
+    """Return lightweight file/scan details for an alert's scan record.
+
+    This endpoint returns filename, input preview, detected entities and timestamp.
+    The service stores only a preview for many scan types; full original file
+    content is not persisted by default.
+    """
+    # fetch the alert -> then the associated scan record
+    # reuse existing get_alerts service via direct query for simplicity
+    result = await db.execute(
+        "SELECT scan_id FROM alerts WHERE alert_id = :aid AND tenant_id = :tid",
+        {"aid": alert_id, "tid": current_user.tenant_id},
+    )
+    row = result.first()
+    if not row:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+
+    scan_id = row[0]
+    scan = await get_scan_by_id(db=db, user=current_user, scan_id=scan_id)
+    if not scan:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found")
+
+    # entities are stored as JSON text in scan.entities_json
+    try:
+        entities = json.loads(scan.entities_json) if scan.entities_json else []
+    except Exception:
+        entities = []
+
+    return FileDetail(
+        scan_id=scan.scan_id,
+        filename=scan.filename,
+        input_preview=scan.input_preview,
+        entities=entities,
+        created_at=scan.created_at,
+    )

@@ -89,6 +89,17 @@ docker-compose up -d
 
 > Default admin credentials are set via `FIRST_ADMIN_EMAIL` / `FIRST_ADMIN_PASSWORD` in your `.env.docker`.
 
+### Local Frontend Development
+
+Run these commands from the project root:
+
+```bash
+npm run install:frontend
+npm run dev
+```
+
+The root `npm run dev` command forwards to the Vite app inside `frontend`.
+
 ## 🏗 Architecture
 
 ```
