@@ -1,2 +1,5 @@
-# Web framework
+# Install backend API runtime dependencies used by Procfile/Heroku.
+-r backend/requirements.txt
+
+# Keep Flask for legacy scripts/tests that still import Flask directly.
 Flask>=2.0.0
