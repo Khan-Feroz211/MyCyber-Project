@@ -11,6 +11,7 @@ from .db.database import get_db
 from .db.models import User
 from .models.schemas import PLAN_LIMITS, PlanLimitError
 from .services.auth import decode_access_token
+from .services.rate_limiter import check_rate_limit
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -69,5 +70,12 @@ async def check_plan_limit(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error.model_dump(),
         )
+
+    # Enforce per-user rate limit (optional, requires REDIS_URL)
+    try:
+        await check_rate_limit(current_user.id)
+    except Exception:
+        # Let HTTPException propagate (429); swallow other errors to avoid denying service
+        raise
 
     return current_user

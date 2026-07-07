@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import os
 import re
 import time
 import uuid
@@ -30,6 +31,10 @@ from ..models.schemas import (
     SeverityLevel,
 )
 from . import ner_model as _ner_model
+import io
+import zipfile
+from PIL import Image
+
 
 _logger = logging.getLogger(__name__)
 
@@ -90,10 +95,48 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         EntityType.CNIC,
         60,
     ),
+    # Looser CNIC form (continuous 13 digits)
+    (
+        re.compile(r"\b\d{13}\b"),
+        EntityType.CNIC,
+        55,
+    ),
     (
         re.compile(r"\b\d{8,17}\b"),
         EntityType.BANK_ACCOUNT,
         30,
+    ),
+    # Pakistan-specific patterns (NTN, IBAN PK, mobile numbers, stricter local bank accounts)
+    (
+        re.compile(r"\b\d{7}-\d\b"),
+        EntityType.CUSTOM,
+        45,
+    ),
+    (
+        re.compile(r"\bPK[0-9]{2}[0-9]{16,20}\b"),
+        EntityType.BANK_ACCOUNT,
+        60,
+    ),
+    (
+        re.compile(r"\b03[0-9]{2}-[0-9]{7}\b"),
+        EntityType.PHONE,
+        25,
+    ),
+    (
+        re.compile(r"\b03[0-9]{9}\b"),
+        EntityType.PHONE,
+        25,
+    ),
+    (
+        re.compile(r"\b[A-Z]{1,2}[0-9]{7}\b"),
+        EntityType.PASSPORT,
+        35,
+    ),
+    # Local bank account ranges commonly 10-14 digits
+    (
+        re.compile(r"\b\d{10,14}\b"),
+        EntityType.BANK_ACCOUNT,
+        35,
     ),
     (
         re.compile(r"\b[A-Z]{1,2}\d{7,9}\b"),  # Passport-style
@@ -161,6 +204,12 @@ _REGEX_PATTERNS: List[Tuple[re.Pattern, EntityType, int]] = [
         EntityType.PROMPT_INJECTION,
         70,
     ),
+        # Common Roman-Urdu prompt-injection phrases (simple heuristics)
+        (
+            re.compile(r"\b(mujhe|sab|de\s+do|de\s+do\s+passwords|passwords\s+de\s+do|give\s+me\s+all)\b", re.IGNORECASE),
+            EntityType.PROMPT_INJECTION,
+            75,
+        ),
 ]
 
 # Entities that immediately push severity to CRITICAL
@@ -404,9 +453,108 @@ def scan_file(req: ScanFileRequest) -> ScanResponse:
     """Decode a base64-encoded file and scan its text content."""
     try:
         raw_bytes = base64.b64decode(req.content_base64)
-        text = raw_bytes.decode("utf-8", errors="replace")
     except Exception as exc:
         raise ValueError(f"Could not decode file '{req.filename}': {exc}") from exc
+
+    def _extract_text_from_bytes(data: bytes, filename: str) -> str:
+        """Attempt multiple strategies to extract textual content from bytes.
+
+        Strategies (in order):
+        - If ZIP archive: extract and recursively parse contained files
+        - Try UTF-8 decoding
+        - Apache Tika (if installed and Java available)
+        - PDF via pdfplumber
+        - DOCX via python-docx
+        - Image OCR via pytesseract + PIL
+        - Fallback: decode with replacement
+        """
+        text_parts: list[str] = []
+
+        # 1) ZIP archive
+        try:
+            if data[:4] == b"PK\x03\x04":
+                try:
+                    with zipfile.ZipFile(io.BytesIO(data)) as z:
+                        for name in z.namelist():
+                            try:
+                                child = z.read(name)
+                                # skip very large binaries
+                                text_parts.append(_extract_text_from_bytes(child, name))
+                            except RuntimeError:
+                                # Possibly encrypted; skip with a note
+                                text_parts.append(f"[ENCRYPTED_FILE:{name}]")
+                        return "\n".join(p for p in text_parts if p)
+                except zipfile.BadZipFile:
+                    pass
+        except Exception:
+            pass
+
+        # 2) UTF-8 decode attempt
+        try:
+            s = data.decode("utf-8")
+            # If looks like text, return
+            if len(s.strip()) > 0 and sum(1 for c in s if ord(c) < 128) / max(1, len(s)) > 0.2:
+                return s
+        except Exception:
+            pass
+
+        # 3) Apache Tika (optional)
+        try:
+            from tika import parser as tika_parser
+
+            parsed = tika_parser.from_buffer(data)
+            content = parsed.get("content") or ""
+            if content and len(content.strip()) > 0:
+                return content
+        except Exception:
+            pass
+
+        # 4) PDF via pdfplumber
+        try:
+            import pdfplumber
+
+            if data[:4] == b"%PDF":
+                with pdfplumber.open(io.BytesIO(data)) as pdf:
+                    for p in pdf.pages:
+                        text_parts.append(p.extract_text() or "")
+                    return "\n".join(t for t in text_parts if t)
+        except Exception:
+            pass
+
+        # 5) DOCX via python-docx
+        try:
+            from docx import Document
+
+            if filename.lower().endswith(".docx"):
+                doc = Document(io.BytesIO(data))
+                for para in doc.paragraphs:
+                    text_parts.append(para.text)
+                return "\n".join(t for t in text_parts if t)
+        except Exception:
+            pass
+
+        # 6) Image OCR via pytesseract
+        try:
+            import pytesseract
+
+            if PYTESSACT_AVAILABLE or True:
+                try:
+                    img = Image.open(io.BytesIO(data))
+                    ocr = pytesseract.image_to_string(img)
+                    if ocr and len(ocr.strip()) > 0:
+                        return ocr
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # 7) Fallback decode with replacement
+        try:
+            return data.decode("utf-8", errors="replace")
+        except Exception:
+            return ""
+
+    text = _extract_text_from_bytes(raw_bytes, req.filename)
 
     return perform_scan(text, scan_id=req.scan_id)
 

@@ -13,4 +13,6 @@
 - Base plans, code changes, and debugging steps on the relevant NeuroTrace context you find.
 - Only save durable, high-signal memories: important decisions, non-obvious findings, root causes, concrete follow-up tasks, or unresolved hypotheses.
 - Do not save routine progress updates, trivial code changes, temporary debugging notes, or facts already obvious from the code.
+- When saving a memory tied to code, include file_path and line whenever possible; include snippet when it helps locate the relevant block.
+- If the file no longer exists or the memory is historical, mark it clearly in the memory text or tags.
 - Before creating a new memory, prefer updating or linking an existing related one if it already covers the same point.

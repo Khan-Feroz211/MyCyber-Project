@@ -21,6 +21,7 @@ from app.middleware.error_handler import (
 from .config import get_settings
 from .db.database import init_db
 from .middleware.security import SecurityHeadersMiddleware
+from .middleware.outbound_blocker import OutboundBlockerMiddleware
 from .mlops.logger import get_logger
 from .mlops.tracker import setup_mlflow
 from .routers import (
@@ -34,6 +35,7 @@ from .routers import (
     reports,
     scan,
     scheduled_scan,
+    quarantine_admin,
 )
 from .services.scanner import load_ner_model
 
@@ -135,6 +137,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(RequestLoggingMiddleware)
 
+# Outbound blocker/quarantine middleware (sovereign deployments)
+app.add_middleware(OutboundBlockerMiddleware)
+
 # ---------------------------------------------------------------------------
 # Security headers (production only)
 # ---------------------------------------------------------------------------
@@ -154,6 +159,7 @@ app.include_router(admin_security.router, prefix="/api/v1")  # /api/v1/admin/sec
 app.include_router(scheduled_scan.router, prefix="/api/v1")  # /api/v1/scheduled/…
 app.include_router(llm_dlp.router, prefix="/api/v1")  # /api/v1/llm-dlp/…
 app.include_router(reports.router, prefix="/api/v1")  # /api/v1/reports/…
+app.include_router(quarantine_admin.router, prefix="/api/v1")
 
 
 @app.get("/")
