@@ -151,6 +151,18 @@ Found a vulnerability? **Please do not open a public issue.** Email **f24605023@
 
 See [SECURITY.md](SECURITY.md) for our full disclosure policy.
 
+## ✅ Security & Compliance
+
+- Encryption at rest for sensitive fields with key-versioned KMS flow
+- Immutable hash-chained audit logging for security events
+- RBAC enforcement for admin/security operations
+- Helm/Kubernetes deployment assets under `helm/` and `k8s/`
+- Security architecture reference: `SECURITY_ARCHITECTURE.md`
+- Compliance scaffolding:
+  - `docs/compliance/SOC2_CONTROL_MAPPING.md`
+  - `docs/compliance/ISO27001_ANNEX_A_CHECKLIST.md`
+  - `tests/load/README.md` for k6 throughput documentation
+
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE) for details.

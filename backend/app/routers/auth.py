@@ -33,7 +33,6 @@ from ..services.auth import (
     hash_password,
     verify_password,
 )
-from ..services.billing_service import ensure_user_subscription
 from ..services.email_service import send_password_reset_email
 from ..services.mfa import (
     build_otpauth_uri,
@@ -42,6 +41,13 @@ from ..services.mfa import (
 )
 from ..services.security_audit import log_security_event
 from ..services import billing_service
+from ..services.audit_log import (
+    EVENT_LOGIN_SUCCESS,
+    EVENT_LOGIN_FAILED,
+    EVENT_PASSWORD_RESET,
+    EVENT_MFA_TOGGLE,
+    append_audit_log,
+)
 from ..models.schemas import (
     MFAStatusResponse,
     PasswordResetConfirm,
@@ -133,6 +139,21 @@ async def login(
                 },
             )
 
+            # Immutable audit log for failed login
+            try:
+                await append_audit_log(
+                    db=db,
+                    event_type=EVENT_LOGIN_FAILED,
+                    resource_type="session",
+                    action="login_failed",
+                    tenant_id=user.tenant_id,
+                    actor=user,
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                )
+            except Exception:
+                pass
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
@@ -219,6 +240,22 @@ async def login(
         ip_address=client_ip,
         user_agent=user_agent,
     )
+
+    # Immutable audit log entry for successful login
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_LOGIN_SUCCESS,
+            resource_type="session",
+            action="login",
+            tenant_id=user.tenant_id,
+            actor=user,
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+    except Exception:
+        pass
+
     await db.flush()
 
     access_token = create_access_token(user.id, user.email, user.tenant_id)
@@ -340,6 +377,17 @@ async def mfa_verify(
         severity="INFO",
         user=current_user,
     )
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_MFA_TOGGLE,
+            resource_type="user_mfa",
+            action="enable",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+        )
+    except Exception:
+        pass
     await db.flush()
 
     return MFAStatusResponse(
@@ -374,6 +422,17 @@ async def mfa_disable(
         severity="MEDIUM",
         user=current_user,
     )
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_MFA_TOGGLE,
+            resource_type="user_mfa",
+            action="disable",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+        )
+    except Exception:
+        pass
     await db.flush()
 
     return MFAStatusResponse(
@@ -456,6 +515,19 @@ async def password_reset_confirm(
         severity="INFO",
         user=user,
     )
+
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_PASSWORD_RESET,
+            resource_type="user",
+            resource_id=str(user.id),
+            action="password_reset",
+            tenant_id=user.tenant_id,
+            actor=user,
+        )
+    except Exception:
+        pass
 
     await db.flush()
 

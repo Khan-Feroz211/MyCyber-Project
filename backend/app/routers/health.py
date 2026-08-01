@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.database import get_db
 from ..services.scanner import SCANNER_NAMES, _model_name
+from ..services.kms import get_encryption_status
 
 router = APIRouter(tags=["health"])
 
@@ -35,4 +36,5 @@ async def health(db: AsyncSession = Depends(get_db)) -> dict:
         "ner_model": _model_name,
         "mlflow_tracking": "enabled",
         "metrics_endpoint": "/metrics",
+        "encryption_at_rest": get_encryption_status(),
     }

@@ -18,6 +18,7 @@ from ..db.models import Alert, LLMInteraction, SecurityAuditEvent, User
 from ..models.schemas import DetectedEntity, ScanResponse
 from .alert_service import create_alert_if_needed
 from .scanner import perform_scan
+from .audit_log import EVENT_LLM_INTERACTION, append_audit_log
 
 _logger = logging.getLogger(__name__)
 
@@ -326,6 +327,28 @@ async def run_llm_dlp_pipeline(
             model=model or LLM_MODEL,
             deactivated_keys=[],
         )
+
+        # Immutable audit log for blocked LLM interaction
+        try:
+            await append_audit_log(
+                db=db,
+                event_type=EVENT_LLM_INTERACTION,
+                resource_type="llm_interaction",
+                resource_id=interaction.interaction_id,
+                action="block",
+                tenant_id=user.tenant_id,
+                actor=user,
+                details={
+                    "status": "blocked",
+                    "reason": f"CRITICAL severity prompt ({pre_scan.total_entities} entities)",
+                    "provider": provider,
+                    "model": model or LLM_MODEL,
+                    "pre_entities": pre_scan.total_entities,
+                },
+            )
+        except Exception:
+            pass
+
         return {
             "interaction_id": interaction.interaction_id,
             "status": "blocked",
@@ -386,6 +409,28 @@ async def run_llm_dlp_pipeline(
             post_scan=post_scan,
             deactivated_keys=deactivated_keys,
         )
+
+    # Immutable audit log for LLM interaction
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_LLM_INTERACTION,
+            resource_type="llm_interaction",
+            resource_id=interaction.interaction_id,
+            action="process",
+            tenant_id=user.tenant_id,
+            actor=user,
+            details={
+                "status": status_str,
+                "provider": provider,
+                "model": model or LLM_MODEL,
+                "pre_entities": pre_scan.total_entities,
+                "post_entities": post_scan.total_entities,
+                "leaked_keys": len(deactivated_keys),
+            },
+        )
+    except Exception:
+        pass
 
     return {
         "interaction_id": interaction.interaction_id,

@@ -66,7 +66,7 @@ async def list_scheduled_scans(
     )
 
 
-@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_scheduled_scan(
     job_id: str,
     current_user: User = Depends(get_current_user),

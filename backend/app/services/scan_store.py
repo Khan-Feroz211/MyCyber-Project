@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import ScanRecord, User
 from ..models.schemas import ScanHistoryItem, ScanHistoryResponse, ScanResponse
+from ..services.audit_log import EVENT_SCAN, append_audit_log
 
 
 async def save_scan(
@@ -16,8 +19,10 @@ async def save_scan(
     filename: str | None = None,
     source_ip: str | None = None,
 ) -> ScanRecord:
-    """Persist a :class:`ScanRecord` and increment the user's monthly scan counter."""
-    import json
+    """Persist a :class:`ScanRecord` and increment the user's monthly scan counter.
+
+    Also appends an immutable audit-log entry for the scan event.
+    """
 
     record = ScanRecord(
         scan_id=scan_response.scan_id,
@@ -40,6 +45,31 @@ async def save_scan(
     db.add(record)
     user.scan_count_month += 1
     await db.flush()
+
+    # Write immutable audit log entry for this scan
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_SCAN,
+            resource_type="scan_record",
+            resource_id=record.scan_id,
+            action="create",
+            tenant_id=user.tenant_id,
+            actor=user,
+            ip_address=source_ip,
+            details={
+                "scan_type": scan_type,
+                "severity": scan_response.severity.value,
+                "risk_score": scan_response.risk_score,
+                "total_entities": scan_response.total_entities,
+                "recommended_action": scan_response.recommended_action,
+                "filename": filename,
+            },
+        )
+    except Exception:
+        # Audit logging must never break the scan flow
+        pass
+
     return record
 
 

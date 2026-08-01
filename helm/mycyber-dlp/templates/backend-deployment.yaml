@@ -1,0 +1,94 @@
+{{- /* Backend Deployment */ -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mycyber.fullname" . }}-backend
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "mycyber.labels" . | nindent 4 }}
+    app: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.port }}
+          env:
+            - name: APP_ENV
+              value: {{ .Values.env.APP_ENV | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.env.LOG_LEVEL | quote }}
+            - name: JWT_SECRET_KEY
+              value: {{ .Values.env.JWT_SECRET_KEY | quote }}
+            - name: ENCRYPTION_MASTER_KEY
+              value: {{ .Values.env.ENCRYPTION_MASTER_KEY | quote }}
+            - name: ENCRYPTION_KEY_VERSION
+              value: {{ .Values.env.ENCRYPTION_KEY_VERSION | quote }}
+            - name: ENCRYPTION_AT_REST_ENABLED
+              value: {{ .Values.env.ENCRYPTION_AT_REST_ENABLED | quote }}
+            - name: ENCRYPTION_KMS_BACKEND
+              value: {{ .Values.env.ENCRYPTION_KMS_BACKEND | quote }}
+            - name: ENCRYPTION_LEGACY_KEYS
+              value: {{ .Values.env.ENCRYPTION_LEGACY_KEYS | quote }}
+            - name: DEPLOYMENT_REGION
+              value: {{ .Values.env.DEPLOYMENT_REGION | quote }}
+            - name: SAFEPAY_SECRET_KEY
+              value: {{ .Values.env.SAFEPAY_SECRET_KEY | quote }}
+            - name: SAFEPAY_WEBHOOK_SECRET
+              value: {{ .Values.env.SAFEPAY_WEBHOOK_SECRET | quote }}
+            - name: FRONTEND_URL
+              value: {{ .Values.env.FRONTEND_URL | quote }}
+          {{- if and .Values.postgresql.enabled .Values.redis.enabled }}
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ include "mycyber.fullname" . }}-postgres:5432/$(POSTGRES_DB)"
+            - name: REDIS_URL
+              value: "redis://{{ include "mycyber.fullname" . }}-redis:6379/0"
+          {{- end }}
+          {{- if .Values.existingSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          # ── Liveness probe (container restarts if unhealthy) ──
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          # ── Readiness probe (removed from service if not ready) ──
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

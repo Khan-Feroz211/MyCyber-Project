@@ -23,6 +23,7 @@ from ..models.schemas import (
 )
 from ..services import billing_service
 from ..services.auth import decode_access_token
+from ..services.audit_log import EVENT_PLAN_CHANGE, append_audit_log
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -144,6 +145,24 @@ async def upgrade_plan(
     )
 
     expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_PLAN_CHANGE,
+            resource_type="subscription",
+            action="upgrade_initiated",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={
+                "new_plan": body.plan,
+                "billing_cycle": body.billing_cycle,
+                "amount_pkr": checkout["amount_pkr"],
+            },
+        )
+    except Exception:
+        pass
+
     return CheckoutResponse(
         checkout_url=checkout["checkout_url"],
         safepay_token=checkout["safepay_token"],
@@ -196,6 +215,20 @@ async def cancel_subscription(
     await db.flush()
 
     period_end = sub.current_period_end
+
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_PLAN_CHANGE,
+            resource_type="subscription",
+            action="cancel",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={"plan": sub.plan, "sub_id": sub.sub_id},
+        )
+    except Exception:
+        pass
+
     return {
         "message": (f"Subscription cancelled. Access continues until {period_end}.")
     }

@@ -5,7 +5,11 @@ import functools
 import time
 from typing import Callable
 
-import mlflow
+try:
+    import mlflow
+    _MLFLOW_AVAILABLE: bool = True
+except ImportError:  # pragma: no cover — optional dependency
+    _MLFLOW_AVAILABLE = False
 
 from app.config import get_settings
 from app.mlops.logger import get_logger
@@ -21,6 +25,11 @@ def setup_mlflow() -> None:
     Logs warning if MLflow server unreachable —
     never raises, never breaks the app.
     """
+    if not _MLFLOW_AVAILABLE:
+        logger.warning(
+            "mlflow package not installed — running without MLflow tracking.",
+        )
+        return
     try:
         settings = get_settings()
         mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
@@ -63,6 +72,8 @@ def track_scan(scan_type: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         def _log_to_mlflow(result, latency_ms: float, status: str) -> None:
+            if not _MLFLOW_AVAILABLE:
+                return
             try:
                 with mlflow.start_run(nested=True):
                     mlflow.log_params(

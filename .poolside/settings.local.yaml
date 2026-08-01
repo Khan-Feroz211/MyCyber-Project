@@ -1,0 +1,45 @@
+tools:
+    shell:
+        allow:
+            - cd *
+            - dir *
+            - findstr *
+            - sort
+            - head *
+            - find *
+            - echo *
+            - ls *
+            - cat *
+            - tail *
+            - grep *
+            - wc *
+            - python *
+            - which python3 *
+            - .venv/Scripts/python *
+            - python3 *
+            - .venv/Scripts/python.exe *
+            - sleep 25
+            - which *
+            - .venv-fresh/bin/python *
+            - .venv-fresh/bin/pip install *
+            - sleep 30
+            - rm *
+            - pip3 *
+            - sleep 60
+            - sleep 45
+            - /mnt/d/Mycyber/MyCyber-Project/.venv-fresh/bin/python *
+            - mkdir *
+            - /mnt/d/MyCyber/MyCyber-Project/.venv-fresh/bin/python *
+            - git status
+            - git remote *
+            - cmd *
+            - git config *
+            - git *
+            - gitstatus.bat
+            - Select-Object *
+            - Out-String *
+            - Get-ChildItem *
+            - Remove-Item *
+paths:
+    allow:
+        - path: /tmp/**

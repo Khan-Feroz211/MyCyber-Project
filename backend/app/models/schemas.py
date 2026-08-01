@@ -19,6 +19,19 @@ class SeverityLevel(str, Enum):
     SAFE = "SAFE"
 
 
+class UserRole(str, Enum):
+    """Fine-grained RBAC roles.
+
+    Hierarchy: viewer < analyst < admin.
+    ``is_admin`` is kept for backward compatibility; when ``True`` it
+    implies ``UserRole.ADMIN``.
+    """
+
+    VIEWER = "viewer"
+    ANALYST = "analyst"
+    ADMIN = "admin"
+
+
 class EntityType(str, Enum):
     SSN = "SSN"
     CREDIT_CARD = "CREDIT_CARD"
@@ -103,6 +116,7 @@ class UserOut(BaseModel):
     full_name: Optional[str]
     is_active: bool
     is_admin: bool
+    role: str = "viewer"
     plan: str
     tenant_id: str
     scan_count_month: int

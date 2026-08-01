@@ -28,6 +28,10 @@ class User(Base):
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # RBAC role: viewer | analyst | admin (defaults to viewer for new users)
+    role: Mapped[str] = mapped_column(
+        String(20), default="viewer", nullable=False, server_default="viewer"
+    )
     tenant_id: Mapped[str] = mapped_column(
         String(36), default=lambda: str(uuid.uuid4()), nullable=False
     )
@@ -60,6 +64,9 @@ class User(Base):
     )
     security_events: Mapped[list["SecurityAuditEvent"]] = relationship(
         "SecurityAuditEvent", back_populates="user", cascade="all, delete-orphan"
+    )
+    audit_entries: Mapped[list["AuditLogEntry"]] = relationship(
+        "AuditLogEntry", back_populates="actor", cascade="all, delete-orphan"
     )
     llm_interactions: Mapped[list["LLMInteraction"]] = relationship(
         "LLMInteraction", back_populates="user", cascade="all, delete-orphan"
@@ -108,7 +115,7 @@ class Alert(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False)
     scan_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("scan_records.scan_id", ondelete="CASCADE"),
@@ -278,7 +285,7 @@ class LLMInteraction(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False)
     original_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     redacted_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     llm_response: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -295,3 +302,51 @@ class LLMInteraction(Base):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="llm_interactions")
+
+
+class AuditLogEntry(Base):
+    """Append-only, tamper-evident audit log.
+
+    Each entry is cryptographically chained to the previous one via a
+    SHA-256 hash digest.  Updates and deletes are prevented at the
+    application layer (see :func:`app.services.audit.append_audit_log`)
+    and should be enforced at the DB level with a trigger in production.
+    """
+
+    __tablename__ = "audit_log_entries"
+
+    __table_args__ = (
+        Index("ix_audit_log_entries_tenant_id", "tenant_id"),
+        Index("ix_audit_log_entries_actor_id", "actor_id"),
+        Index("ix_audit_log_entries_event_type", "event_type"),
+        Index("ix_audit_log_entries_created_at", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    entry_id: Mapped[str] = mapped_column(
+        String(36), unique=True, default=lambda: str(uuid.uuid4()), nullable=False
+    )
+    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    actor_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    resource_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    resource_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    severity: Mapped[str] = mapped_column(String(16), default="INFO", nullable=False)
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    details_json: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Hash chaining
+    previous_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    entry_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Key version used for hashing (for rotation auditing)
+    key_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    actor: Mapped["User | None"] = relationship("User", back_populates="audit_entries")

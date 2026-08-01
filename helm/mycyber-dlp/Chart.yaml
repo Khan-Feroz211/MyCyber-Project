@@ -1,0 +1,21 @@
+apiVersion: v2
+name: mycyber-dlp
+description: >-
+  MyCyber DLP — Open-source Data Loss Prevention platform with real-time
+  scanning, LLM-aware content filtering, and zero-trust access control.
+type: application
+version: 0.5.0
+appVersion: "0.5.0"
+home: https://github.com/Khan-Feroz211/MyCyber-Project
+sources:
+  - https://github.com/Khan-Feroz211/MyCyber-Project
+maintainers:
+  - name: Feroz U Din
+    email: f24605023@nutech.edu.pk
+keywords:
+  - dlp
+  - data-loss-prevention
+  - security
+  - kubernetes
+  - pii
+  - scan

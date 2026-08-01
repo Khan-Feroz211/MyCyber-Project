@@ -13,6 +13,7 @@ from ..db.models import SecurityAuditEvent, User
 from ..dependencies import get_current_user
 from ..models.schemas import AdminIncidentActionRequest, AdminLockUserRequest
 from ..services.security_audit import log_security_event
+from ..services.audit_log import EVENT_ADMIN_ACTION, append_audit_log
 
 router = APIRouter(prefix="/admin/security", tags=["admin-security"])
 settings = get_settings()
@@ -105,6 +106,19 @@ async def lock_user(
         user=target,
         details={"admin_id": current_user.id, "reason": payload.reason, "lock_minutes": payload.lock_minutes},
     )
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ADMIN_ACTION,
+            resource_type="user",
+            resource_id=str(target.id),
+            action="lock_user",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={"target_user_id": target.id, "lock_minutes": payload.lock_minutes, "reason": payload.reason},
+        )
+    except Exception:
+        pass
     await db.flush()
 
     return {
@@ -136,6 +150,19 @@ async def unlock_user(
         user=target,
         details={"admin_id": current_user.id, "reason": payload.reason},
     )
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ADMIN_ACTION,
+            resource_type="user",
+            resource_id=str(target.id),
+            action="unlock_user",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={"target_user_id": target.id, "reason": payload.reason},
+        )
+    except Exception:
+        pass
     await db.flush()
 
     return {
@@ -167,6 +194,19 @@ async def deactivate_user(
         user=target,
         details={"admin_id": current_user.id, "reason": payload.reason},
     )
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ADMIN_ACTION,
+            resource_type="user",
+            resource_id=str(target.id),
+            action="deactivate_user",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={"target_user_id": target.id, "reason": payload.reason},
+        )
+    except Exception:
+        pass
     await db.flush()
 
     return {
@@ -199,10 +239,78 @@ async def reactivate_user(
         user=target,
         details={"admin_id": current_user.id, "reason": payload.reason},
     )
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ADMIN_ACTION,
+            resource_type="user",
+            resource_id=str(target.id),
+            action="reactivate_user",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={"target_user_id": target.id, "reason": payload.reason},
+        )
+    except Exception:
+        pass
     await db.flush()
 
     return {
         "success": True,
         "user_id": target.id,
         "is_active": True,
+    }
+
+
+@router.get("/encryption/status")
+async def encryption_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Return the current encryption-at-rest configuration (admin only)."""
+    _require_admin(current_user)
+    from ..services.kms import get_encryption_status
+
+    return get_encryption_status()
+
+
+@router.post("/encryption/rotate")
+async def rotate_encryption_key(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Trigger a key rotation and re-encryption of all sensitive fields.
+
+    This endpoint rotates the data-encryption key by re-encrypting all
+    sensitive fields under the new master key version.  It should be
+    called after an operator has updated ``ENCRYPTION_KEY_VERSION`` and
+    ``ENCRYPTION_MASTER_KEY`` (with the new key) and added the old key
+    to ``ENCRYPTION_LEGACY_KEYS``.
+
+    **Warning**: This is a long-running operation.  In production it
+    should be scheduled as a background task.  For large datasets, use
+    the Celery task instead.
+    """
+    _require_admin(current_user)
+
+    from ..services.field_encryption import reencrypt_all_sensitive_fields
+
+    summary = await reencrypt_all_sensitive_fields(db)
+
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ADMIN_ACTION,
+            resource_type="encryption",
+            action="key_rotation",
+            tenant_id=current_user.tenant_id,
+            actor=current_user,
+            details={"reencrypted": summary},
+        )
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "message": "Key rotation and re-encryption completed.",
+        "reencrypted": summary,
     }

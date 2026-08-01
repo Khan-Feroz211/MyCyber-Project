@@ -1,0 +1,17 @@
+{{- /* Backend Service */ -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mycyber.fullname" . }}-backend
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "mycyber.labels" . | nindent 4 }}
+    app: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: {{ .Values.backend.port }}
+      targetPort: {{ .Values.backend.port }}
+  type: ClusterIP

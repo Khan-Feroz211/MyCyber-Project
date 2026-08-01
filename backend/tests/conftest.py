@@ -17,6 +17,8 @@ os.environ.setdefault(
     "DATABASE_URL",
     "sqlite+aiosqlite:///./test_mycyber_dlp.db",
 )
+# Encryption at rest — test key (32-byte raw string)
+os.environ.setdefault("ENCRYPTION_MASTER_KEY", "test-encryption-key-32-bytes-long!!!")
 
 # Add backend/ to sys.path so that `from app.xxx import ...` works inside tests
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -139,13 +141,16 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture
 async def registered_user(db_session: AsyncSession) -> User:
     """Insert a free-plan test user directly into the DB and return it."""
+    from uuid import uuid4
+
+    suffix = uuid4().hex[:8]
     user = User(
-        email="test@mycyber.com",
+        email=f"test-{suffix}@mycyber.com",
         hashed_password=hash_password(
             "password123"
         ),  # noqa: S106 — test-only credential
         full_name="Test User",
-        tenant_id="test-tenant-001",
+        tenant_id=f"test-tenant-{suffix}",
         plan="free",
         scan_count_month=0,
     )

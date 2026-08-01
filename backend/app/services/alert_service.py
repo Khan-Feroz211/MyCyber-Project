@@ -9,6 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.models import Alert, ScanRecord, User
 from ..models.schemas import AlertOut, AlertsResponse, ScanResponse
 from .telegram_service import notify_scan_alert
+from .audit_log import (
+    EVENT_ALERT_ACKNOWLEDGED,
+    EVENT_ALERT_DELETED,
+    EVENT_ALERT_REVIEWED,
+    append_audit_log,
+)
 
 ALERT_SEVERITIES: set[str] = {"CRITICAL", "HIGH"}
 
@@ -117,6 +123,20 @@ async def acknowledge_alert(
     alert.is_acknowledged = True
     alert.acknowledged_at = datetime.now(tz=timezone.utc)
     await db.flush()
+
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ALERT_ACKNOWLEDGED,
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            action="acknowledge",
+            tenant_id=user.tenant_id,
+            actor=user,
+            details={"review_status": alert.review_status},
+        )
+    except Exception:
+        pass
     return alert
 
 
@@ -161,6 +181,19 @@ async def delete_alert(db: AsyncSession, user: User, alert_id: str) -> None:
     await db.delete(alert)
     await db.flush()
 
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ALERT_DELETED,
+            resource_type="alert",
+            resource_id=alert_id,
+            action="delete",
+            tenant_id=user.tenant_id,
+            actor=user,
+        )
+    except Exception:
+        pass
+
 
 async def update_review_status(db: AsyncSession, user: User, alert_id: str, status: str) -> Alert:
     """Update the review status of an alert; raise 404 if not found or wrong tenant."""
@@ -192,4 +225,21 @@ async def update_review_status(db: AsyncSession, user: User, alert_id: str, stat
         alert.reviewed_at = None
 
     await db.flush()
+
+    try:
+        await append_audit_log(
+            db=db,
+            event_type=EVENT_ALERT_REVIEWED,
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            action="review_status_update",
+            tenant_id=user.tenant_id,
+            actor=user,
+            details={
+                "old_status": "",  # best-effort; old value not tracked
+                "new_status": status,
+            },
+        )
+    except Exception:
+        pass
     return alert

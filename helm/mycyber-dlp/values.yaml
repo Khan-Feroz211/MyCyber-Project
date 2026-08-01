@@ -1,0 +1,111 @@
+# Default values for mycyber-dlp.
+
+# ── Global ─────────────────────────────────────────────────────────────
+namespace: mycyber-dlp
+
+# ── Backend ────────────────────────────────────────────────────────────
+backend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/khan-feroz211/mycyber-project/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8000
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+
+# ── Frontend ───────────────────────────────────────────────────────────
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/khan-feroz211/mycyber-project/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 80
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+
+# ── PostgreSQL ─────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+  auth:
+    postgresPassword: "postgres"
+    database: mycyber_dlp
+    username: postgres
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+  persistence:
+    enabled: true
+    size: "10Gi"
+
+# ── Redis ──────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+
+# ── Ingress ────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+    - host: mycyber.yourdomain.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          serviceName: mycyber-backend
+          servicePort: 8000
+        - path: /
+          pathType: Prefix
+          serviceName: mycyber-frontend
+          servicePort: 80
+
+# ── Environment variables (override defaults here) ─────────────────────
+# JWT_SECRET_KEY and ENCRYPTION_MASTER_KEY are REQUIRED in production.
+env:
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+  JWT_SECRET_KEY: "change-me-to-32-chars-or-more"
+  ENCRYPTION_MASTER_KEY: "change-me-to-32-byte-key"
+  ENCRYPTION_KEY_VERSION: 1
+  ENCRYPTION_AT_REST_ENABLED: "true"
+  ENCRYPTION_KMS_BACKEND: "env"
+  ENCRYPTION_LEGACY_KEYS: ""
+  DEPLOYMENT_REGION: ""
+  SAFEPAY_SECRET_KEY: ""
+  SAFEPAY_WEBHOOK_SECRET: ""
+  FRONTEND_URL: "https://mycyber.yourdomain.com"
+
+# ── Extra env from secrets ─────────────────────────────────────────────
+# Reference an existing Kubernetes Secret to populate env vars.
+existingSecret: ""
