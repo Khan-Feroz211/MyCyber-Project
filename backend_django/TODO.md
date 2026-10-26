@@ -98,3 +98,23 @@ does not exist yet. Until these resolve, `manage.py check` and tests cannot run.
 - [x] `SECURITY_ARCHITECTURE.md` (Django data stores: Postgres/Rabbit/Redis, processing, egress, secrets, threat notes).
 - [x] `docs/compliance/` SOC2 + ISO27001 control mapping (with code/test evidence references).
 - [x] README "Security & Compliance" section for the Django backend (`backend_django/README.md`).
+
+## Follow-ups (completed)
+- [x] **SQL-injection detection coverage** — `tests/test_scan.py` `SQLInjectionDetectionTests`
+      verify the regex engine flags `'; DROP TABLE users; --`, `UNION SELECT …`,
+      `' OR '1'='1`, and case-insensitive variants (CRITICAL / `SQL_INJECTION`),
+      and that benign text scores SAFE/0.
+- [x] **Data-retention GC** — `apps/incidents/management/commands/purge_old_data.py`
+      (`--days`, `--tenant`) deletes stale scans/alerts/LLM-incidents/quarantine
+      while **never** touching the hash-chained `AuditLogEntry`; the action is
+      append-only audited. `DataRetentionTests` covers the old/keep/audit
+      invariant (per-tenant `verify_chain` stays valid).
+- [x] **README edge-cases/troubleshooting** — added the "Edge cases & troubleshooting"
+      section (Postgres-hang workaround, test-discovery gotcha, dev-vs-bench auth
+      401, `:memory:` cross-process, 419/403/429 semantics, webhook HMAC, key
+      rotation, field-encryption format).
+
+> **Status (final):** `manage.py check` = 0 issues; `manage.py makemigrations --check`
+> = no drift; `manage.py test` = **63 tests, OK** (45 Phase 0–4 + 12 Phase 5 + 6
+> SQLi/retention). Committed as `b4c5991` and pushed to `origin main`.
+

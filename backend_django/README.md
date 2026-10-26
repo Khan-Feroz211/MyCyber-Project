@@ -92,3 +92,61 @@ backend_django/
 - **Load testing**: `tests/load/README.md` documents a reproducible benchmark
   with measured RPS (see that file for the numbers and how to reproduce with
   k6 or the bundled stdlib benchmark).
+
+## Edge cases & troubleshooting
+
+> If something "just hangs" or returns 401/403/419, it is almost one of these.
+
+- **PostgreSQL hangs on connect.** The default `DATABASE_URL` is
+  `postgresql://postgres:postgres@localhost:5432/mycyber_dlp`, which will hang
+  if no Postgres is running. Always override it with a real SQLite file for
+  local work: `set DATABASE_URL=sqlite:///./dev.db` (for `runserver`/`migrate`)
+  or `sqlite:///./bench.db` (for benchmarks). Never point a single-process dev
+  server at Postgres you don't have.
+- **`manage.py test` from the *repo root* errors on `import app`.** Discovery
+  picks up the legacy FastAPI test files (`test_registration.py` etc.) at the
+  repo root, which `import app` (needs `aiofiles`, not installed) and explode.
+  **Always** run from the project root and pass explicit labels:
+  `backend_django/manage.py test tests.test_auth tests.test_scan …`.
+- **401 on every request with the dev server.** `mycyber.settings.dev` puts
+  `simplejwt` authentication first; the React/Vite frontend issues PyJWT HS256
+  tokens directly, so `simplejwt` rejects them (401) before our auth runs. Use
+  the **bench** settings instead, which keep MFA-only PyJWT auth:
+  `manage.py runserver 127.0.0.1:8123 --noreload --settings=mycyber.settings.bench`.
+- **Tables missing across processes with `:memory:` SQLite.** The `test` setting
+  hardcodes `NAME=":memory:"` per-connection, so `migrate` and `runserver` get
+  *different* in-memory DBs. Use a **file** DB (`sqlite:///./bench.db`) when
+  running a live server, or rely on Django's test DB auto-creation via
+  `manage.py test`.
+- **`--threaded` is rejected.** Django's dev server is threaded by default;
+  passing `--threaded` raises an unrecognized-argument error. Drop the flag.
+- **419 = session expired (24h).** A 419 from any view means the bearer token
+  is older than `SESSION_TIMEOUT_HOURS` (default 24). Re-login. 403 = logged-in
+  but not an admin (RBAC). 401 = bad/expired signature.
+- **Plan quota: 429 Too Many Requests.** `free`=100, `pro`=10,000,
+  `enterprise`=999,999 scans/month. The scan view calls `check_plan_limit`
+  before scanning, so the first scan of the next month resets the counter.
+- **MFA locked out.** `MFA_ROLLOUT_MODE` defaults to `opt_in`. If a user loses
+  their device and `MFA_FORCE` is not set, an admin can reset via the admin
+  security views (`/admin/…`) or toggle MFA off for the tenant.
+- **SafePay webhook signature mismatch.** Verify `SAFEPAY_WEBHOOK_SECRET` is
+  set to the *same* value configured in the SafePay dashboard; the view HMACs
+  the raw body (no JSON re-serialization). Tampered timestamps >5 min are
+  rejected.
+- **`verify_chain()` reports a break at a tenant boundary.** Audit chaining is
+  **per-tenant**: each tenant's first entry anchors `previous_hash=GENESIS`.
+  `verify_chain()` with no argument walks *all* entries globally and is only
+  valid in a **single-tenant** DB. Use `verify_chain(tenant_id=<id>)` for a
+  specific tenant. System-level actions (no tenant) use the reserved tenant
+  `"system"`; they chain off that tenant's `GENESIS`.
+- **Purge deletes the right rows, never the audit log.**
+  `python manage.py purge_old_data --days 30` removes stale scans/alerts/LLM /
+  incidents/quarantine older than `DATA_RETENTION_DAYS` (default 365) but
+  **never** touches `AuditLogEntry`. Pass `--tenant <id>` to scope the purge and
+  its audit entry to one tenant.
+- **Field encryption key rotation.** `ENCRYPTION_MASTER_KEY` rotation is done
+  via `mycyber.services.kms` (`reencrypt_all_sensitive_fields`); sensitive
+  fields are registered per-app in each `AppConfig.ready()` via
+  `register_sensitive_field`. The format is
+  `v1:<b64(salt)>:<b64(nonce)>:<b64(ct+tag)>` with an HKDF-derived data key.
+
