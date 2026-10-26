@@ -1,0 +1,14 @@
+# Python / Django scratch artifacts — never commit
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.db-journal
+*.pyc
+# Local scratch databases
+dev_check.db
+dev_check.db-journal
+bench.db
+bench.db-journal
+test_mycyber_django_db
+test_mycyber_django_db-journal
